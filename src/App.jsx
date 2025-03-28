@@ -3,14 +3,16 @@ import { OrbitControls, Html, Edges } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-const CubeR = () => {
+const CubeR = ({onDraggingChange}) => {
   const meshRef = useRef();
   const [selected, setSelected] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const {camera, gl, controls} = useThree();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 2);
 
-  const thick = 50;
+  useEffect(() => {
+    onDraggingChange(isDragging);
+  },[isDragging, onDraggingChange]);
   useEffect(() => {
     const handleMouseMove = (event) => {
       if(!isDragging || !meshRef.current) return;
@@ -41,7 +43,7 @@ const CubeR = () => {
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mosueup", handleMouseUp);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, camera,gl, controls]);
   return(
@@ -57,11 +59,7 @@ const CubeR = () => {
           <Edges>
             <lineSegments>
               <edgesGeometry attach="geometry" args={[meshRef.current.geometry]} />
-              <lineBasicMaterial 
-                color="white"
-                linewidth={100}
-                transparent={true}
-              />
+              <lineBasicMaterial color={"0xff0000"}/>
             </lineSegments>
           </Edges>
           <Html position={[0,0.3,0]}>
@@ -90,13 +88,18 @@ const CubeR = () => {
 
 
 const App = () => {
+  const [isDragging, setIsDragging] = useState(false);
+  const handleDraggingChange = (dragging) => {
+    setIsDragging(dragging);
+  };
+
   return (
     <Canvas gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <OrbitControls />
+      <OrbitControls enabled={!isDragging} />
       <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
       <color attach="background" args={["#000000"]}/>
       <gridHelper args={[1000,500,'red', 'white']}/>
-      <CubeR />
+      <CubeR onDraggingChange={handleDraggingChange}/>
     </Canvas>
   )
 }
