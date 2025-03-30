@@ -4,14 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { color } from "three/tsl";
 
-const CubeR = ({onDraggingChange, onRotatingChange}) => {
+const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
   const meshRef = useRef();
   const [selected, setSelected] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
+  const [markerActive, setMarkerActive] = useState(false);
   const {camera, gl, controls} = useThree();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 2);
 
+  const focusOnCube = () => {
+    const cubePostion = meshRef.current.position;
+    const newCameraPos = cubePostion.clone().add(new THREE.Vector3(0,8,0));
+    camera.position.copy(newCameraPos);
+    camera.lookAt(cubePostion);
+    controls.enabled = false;
+    setMarkerActive(true);
+  };
+
+  useEffect(() => {
+    onMarkerActive(markerActive);
+  },[markerActive, onMarkerActive]);
   useEffect(() => {
     onRotatingChange(isRotating);
   },[isRotating, onRotatingChange]);
@@ -68,6 +81,10 @@ const CubeR = ({onDraggingChange, onRotatingChange}) => {
   }, [isDragging, isRotating, camera,gl, controls, plane]);
   return(
     <mesh ref={meshRef} position={[0,2,0]} onClick={(e) => {
+      if(markerActive) {
+        e.stopPropagation();
+        return;
+      }
       e.stopPropagation();
       setSelected(!selected);
     }}>
@@ -75,7 +92,7 @@ const CubeR = ({onDraggingChange, onRotatingChange}) => {
       <pointLight position={[0,2,0]} intensity={10} color={0xffffff}/>
       <meshLambertMaterial color="595959" emissive={"#595959"}/>
     
-      {selected && (
+      {selected && !markerActive && (
         <>
           <Edges>
             <lineSegments>
@@ -124,10 +141,33 @@ const CubeR = ({onDraggingChange, onRotatingChange}) => {
                 background: "white",
                 margin: "auto",
                 cursor: "grab",
-                }}>
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  focusOnCube();
+                }}
+                >
                 <img src="src/assets/marker-solid.svg" style={{width: "20px"}} draggable="false"/>
               </button>
             </div>
+          </Html>
+        </>
+      )}
+      
+      {markerActive && (
+        <>
+          <Html position={[4, 0.3, -4]}>
+            <button style={{ 
+              background: "white",
+              margin: "auto",
+              cursor: "grab",}}
+              onClick={(e) => {
+                e.stopPropagation();
+                setMarkerActive(false);
+              }}>
+                <img src="src/assets/xmark-solid.svg" style={{width: "20px"}} draggable="false"/>
+
+            </button>
           </Html>
         </>
       )}
@@ -139,17 +179,19 @@ const CubeR = ({onDraggingChange, onRotatingChange}) => {
 const App = () => {
   const [isRotating, setIsRotating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-
+  const [markerActive, setMarkerActive] = useState(false);
   const handleRotatingChange = (rotating) => {
     setIsRotating(rotating);
   };
   const handleDraggingChange = (dragging) => {
     setIsDragging(dragging);
   };
-
+  const handleMarkerActive = (marker) => {
+    setMarkerActive(marker);
+  };
   return (
     <Canvas gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <OrbitControls enabled={!isRotating && !isDragging} makeDefault/>
+      <OrbitControls enabled={!isRotating && !isDragging && !markerActive} makeDefault/>
       <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
       <color attach="background" args={["#3057E1"]}/>
       <gridHelper args={[1000,200,"gray", "white"] }/>
@@ -157,7 +199,7 @@ const App = () => {
       alignment="bottom-right" margin={[80,80]} >
         <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
       </GizmoHelper>
-      <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange}/>
+      <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive}/>
     </Canvas>
   )
 }
