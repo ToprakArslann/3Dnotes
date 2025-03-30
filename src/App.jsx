@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { color } from "three/tsl";
 
 const CubeR = ({onDraggingChange, onRotatingChange}) => {
   const meshRef = useRef();
@@ -35,11 +36,11 @@ const CubeR = ({onDraggingChange, onRotatingChange}) => {
         meshRef.current.position.set(point.x, 2, point.z);
       }
       if(isRotating){
-        const deltaX = point.x - previousMouseX;
-        const rotationSpeed = 0.2;
+        const deltaX = mouse.x - previousMouseX;
+        const rotationSpeed = 2;
         meshRef.current.rotation.y -= deltaX * rotationSpeed;
       }
-      previousMouseX = point.x;
+      previousMouseX = mouse.x;
     
     };
 
@@ -148,13 +149,13 @@ const App = () => {
 
   return (
     <Canvas gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <OrbitControls enabled={!isRotating && !isDragging}/>
+      <OrbitControls enabled={!isRotating && !isDragging} makeDefault/>
       <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
-      <color attach="background" args={["#000000"]}/>
-      <gridHelper args={[1000,500,'red', 'white']}/>
+      <color attach="background" args={["#3057E1"]}/>
+      <gridHelper args={[1000,200,"gray", "white"] }/>
       <GizmoHelper
       alignment="bottom-right" margin={[80,80]} >
-        <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black"/>
+        <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
       </GizmoHelper>
       <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange}/>
     </Canvas>
