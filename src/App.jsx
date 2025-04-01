@@ -1,9 +1,18 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
+import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
-import { color } from "three/tsl";
 
+const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
+  const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
+  
+  return (
+    <primitive 
+      object={new InfiniteGridHelper(size1, size2, gridColor, distance, axes)}
+    />
+  );
+};
 const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
@@ -240,6 +249,7 @@ const App = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [markerActive, setMarkerActive] = useState(false);
   const handleRotatingChange = (rotating) => {
+
     setIsRotating(rotating);
   };
   const handleDraggingChange = (dragging) => {
@@ -248,12 +258,13 @@ const App = () => {
   const handleMarkerActive = (marker) => {
     setMarkerActive(marker);
   };
+  const startPos = new THREE.Vector3(0,10,5);
   return (
-    <Canvas gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+    <Canvas camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
       <OrbitControls enabled={!isRotating && !isDragging && !markerActive} makeDefault/>
       <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
       <color attach="background" args={["#3057E1"]}/>
-      <gridHelper args={[1000,200,"gray", "white"] }/>
+      <InfiniteGrid size1={2} size2={10} color={0xffffff} distance={200} axes="xzy"/>
       {!markerActive &&
         <GizmoHelper
         alignment="bottom-right" margin={[80,80]} >
@@ -266,3 +277,7 @@ const App = () => {
 }
 
 export default App;
+
+
+
+
