@@ -6,21 +6,72 @@ import { color } from "three/tsl";
 
 const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
   const meshRef = useRef();
+  const arrowRef = useRef();
+  const controlsRef = useRef();
+  const isAnimating = useRef(false);
+  const animationProgress = useRef(0);
   const [selected, setSelected] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
   const [markerActive, setMarkerActive] = useState(false);
   const {camera, gl, controls} = useThree();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 2);
-
+  const startPosition = useRef(new THREE.Vector3());
+  const startLookAt = useRef(new THREE.Vector3());
+  const targetPosition = useRef(new THREE.Vector3());
+  const currentLookAt = useRef(new THREE.Vector3());
   const focusOnCube = () => {
-    const cubePostion = meshRef.current.position;
-    const newCameraPos = cubePostion.clone().add(new THREE.Vector3(0,8,0));
-    camera.position.copy(newCameraPos);
-    camera.lookAt(cubePostion);
+    if(isAnimating.current) return;
+
+    const boxDirection = new THREE.Vector3(0,1,0.1);
+    boxDirection.applyQuaternion(meshRef.current.quaternion);
+
+    const meshPosition = meshRef.current.position.clone();
+  
+    const cameraDistance = 8;        
+    const cameraTarget = meshPosition.clone().add(boxDirection.clone().multiplyScalar(cameraDistance))
+    
+    startPosition.current.copy(camera.position);
+    startLookAt.current.copy(controlsRef.current.target);
+    targetPosition.current.copy(cameraTarget);
+    currentLookAt.current.copy(meshPosition);
+
+    animationProgress.current = 0;
+    isAnimating.current = true;
+
     controls.enabled = false;
     setMarkerActive(true);
   };
+
+  const exitMarker = () => {
+    if(isAnimating.current) return;
+    setMarkerActive(false);
+    controls.enabled = true;
+    camera.position.copy(startPosition.current);
+  }
+  useFrame((state, delta) => {
+    if(isAnimating.current && markerActive){
+      animationProgress.current += delta * 0.5;
+
+      const progress = Math.min(animationProgress.current, 1);
+
+      const easedProgress = easeInOutCubic(progress);
+
+      camera.position.lerpVectors(startPosition.current, targetPosition.current, easedProgress);
+      controlsRef.current.target.lerpVectors(startLookAt.current, currentLookAt.current, easedProgress);
+
+      controlsRef.current.update();
+
+      if(progress >= 1){
+        isAnimating.current = false;
+        controls.enabled = false;
+      }
+    }
+  });
+
+  function easeInOutCubic(x) {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  }
 
   useEffect(() => {
     onMarkerActive(markerActive);
@@ -80,98 +131,106 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
     };
   }, [isDragging, isRotating, camera,gl, controls, plane]);
   return(
-    <mesh ref={meshRef} position={[0,2,0]} onClick={(e) => {
-      if(markerActive) {
+    <>
+      <OrbitControls ref={controlsRef} enabled={false}/>
+      <mesh ref={meshRef} position={[0,2,0]} onClick={(e) => {
+        if(markerActive) {
+          e.stopPropagation();
+          return;
+        }
         e.stopPropagation();
-        return;
-      }
-      e.stopPropagation();
-      setSelected(!selected);
-    }}>
-      <boxGeometry args={[6,0.5,5]}/>
-      <pointLight position={[0,2,0]} intensity={10} color={0xffffff}/>
-      <meshLambertMaterial color="595959" emissive={"#595959"}/>
-    
-      {selected && !markerActive && (
-        <>
-          <Edges>
-            <lineSegments>
-              <edgesGeometry attach="geometry" args={[meshRef.current.geometry]} />
-              <lineBasicMaterial color={"0xff0000"}/>
-            </lineSegments>
-          </Edges>
-          <Html position={[3,0.3,0]}>
-            <div style={{
-              padding: "8px",
-              gap: "8px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              alignItems: "flex-start",
-              borderRadius: "4px",
-              border: "none",
-            }}>
-              <button style={{
-                background: "white",
-                margin: "auto",
-                cursor: "grab",
-              }}
-              onMouseDown={(e) =>{
-                e.stopPropagation();
-                setIsDragging(true);
-              }}
-              onMouseUp={() => setIsDragging(false)}
-              >
-                <img src="src/assets/hand-pointer-solid.svg" style={{width: "20px"}} draggable="false"/>
-              </button>
-              <button style={{
-                background: "white",
-                margin: "auto",
-                cursor: "grab",
+        setSelected(!selected);
+      }}>
+        <boxGeometry args={[6,0.5,5]}/>
+        <pointLight position={[0,2,0]} intensity={10} color={0xffffff}/>
+        <meshLambertMaterial color="595959" emissive={"#595959"}/>
+        <arrowHelper
+          ref={arrowRef}
+          position={[0, 0.25, 2.5]}
+          color={0xff0000}
+          visible={true}
+        />
+        {selected && !markerActive && (
+          <>
+            <Edges>
+              <lineSegments>
+                <edgesGeometry attach="geometry" args={[meshRef.current.geometry]} />
+                <lineBasicMaterial color={"0xff0000"}/>
+              </lineSegments>
+            </Edges>
+            <Html position={[3,0.3,0]}>
+              <div style={{
+                padding: "8px",
+                gap: "8px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-start",
+                alignItems: "flex-start",
+                borderRadius: "4px",
+                border: "none",
+              }}>
+                <button style={{
+                  background: "white",
+                  margin: "auto",
+                  cursor: "grab",
                 }}
-                onMouseDown={(e) => {
+                onMouseDown={(e) =>{
                   e.stopPropagation();
-                  setIsRotating(true);
+                  setIsDragging(true);
                 }}
-                onMouseUp={() => setIsRotating(false)}
+                onMouseUp={() => setIsDragging(false)}
                 >
-                <img src="src/assets/rotate-solid.svg" style={{width: "20px"}} draggable="false"/>
-              </button>
-              <button style={{
+                  <img src="src/assets/hand-pointer-solid.svg" style={{width: "20px"}} draggable="false"/>
+                </button>
+                <button style={{
+                  background: "white",
+                  margin: "auto",
+                  cursor: "grab",
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setIsRotating(true);
+                  }}
+                  onMouseUp={() => setIsRotating(false)}
+                  >
+                  <img src="src/assets/rotate-solid.svg" style={{width: "20px"}} draggable="false"/>
+                </button>
+                <button style={{
+                  background: "white",
+                  margin: "auto",
+                  cursor: "grab",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    focusOnCube();
+                  }}
+                  >
+                  <img src="src/assets/marker-solid.svg" style={{width: "20px"}} draggable="false"/>
+                </button>
+              </div>
+            </Html>
+          </>
+        )}
+        
+        {markerActive && (
+          <>
+            <Html position={[4, 0.3, -4]}>
+              <button style={{ 
                 background: "white",
                 margin: "auto",
-                cursor: "grab",
-                }}
+                cursor: "grab",}}
                 onClick={(e) => {
                   e.stopPropagation();
-                  focusOnCube();
-                }}
-                >
-                <img src="src/assets/marker-solid.svg" style={{width: "20px"}} draggable="false"/>
-              </button>
-            </div>
-          </Html>
-        </>
-      )}
-      
-      {markerActive && (
-        <>
-          <Html position={[4, 0.3, -4]}>
-            <button style={{ 
-              background: "white",
-              margin: "auto",
-              cursor: "grab",}}
-              onClick={(e) => {
-                e.stopPropagation();
-                setMarkerActive(false);
-              }}>
-                <img src="src/assets/xmark-solid.svg" style={{width: "20px"}} draggable="false"/>
+                  exitMarker();
+                }}>
+                  <img src="src/assets/xmark-solid.svg" style={{width: "20px"}} draggable="false"/>
 
-            </button>
-          </Html>
-        </>
-      )}
-    </mesh>
+              </button>
+            </Html>
+          </>
+        )}
+      </mesh>
+    </>
   )
 }
 
@@ -195,10 +254,12 @@ const App = () => {
       <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
       <color attach="background" args={["#3057E1"]}/>
       <gridHelper args={[1000,200,"gray", "white"] }/>
-      <GizmoHelper
-      alignment="bottom-right" margin={[80,80]} >
-        <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
-      </GizmoHelper>
+      {!markerActive &&
+        <GizmoHelper
+        alignment="bottom-right" margin={[80,80]} >
+          <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
+        </GizmoHelper>
+      }
       <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive}/>
     </Canvas>
   )
