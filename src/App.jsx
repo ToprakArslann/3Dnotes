@@ -3,7 +3,8 @@ import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport } from "@react-t
 import { useEffect, useRef, useState } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
-
+import UserInterface from "./UserInterface";
+import "./App.css";
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
   
@@ -260,24 +261,24 @@ const App = () => {
   };
   const startPos = new THREE.Vector3(0,10,5);
   return (
-    <Canvas camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-      <OrbitControls enabled={!isRotating && !isDragging && !markerActive} makeDefault/>
-      <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
-      <color attach="background" args={["#3057E1"]}/>
-      <InfiniteGrid size1={2} size2={10} color={0xffffff} distance={200} axes="xzy"/>
-      {!markerActive &&
-        <GizmoHelper
-        alignment="bottom-right" margin={[80,80]} >
-          <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
-        </GizmoHelper>
-      }
-      <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive}/>
-    </Canvas>
+    <div className="App">
+      <Canvas camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+        <OrbitControls enabled={!isRotating && !isDragging && !markerActive} makeDefault/>
+        <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
+        <color attach="background" args={["#3057E1"]}/>
+        <InfiniteGrid size1={2} size2={10} color={0xffffff} distance={200} axes="xzy"/>
+        {!markerActive &&
+          <GizmoHelper
+          alignment="bottom-right" margin={[80,80]} >
+            <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
+          </GizmoHelper>
+        }
+        <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive}/>
+        <UserInterface/>
+      </Canvas>
+    </div>
+
   )
 }
 
 export default App;
-
-
-
-
