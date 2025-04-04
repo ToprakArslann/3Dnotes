@@ -5,6 +5,7 @@ import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
 import "./App.css";
+import { Hand, PencilLine, RotateCw } from "lucide-react";
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
   
@@ -14,7 +15,7 @@ const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 80
     />
   );
 };
-const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
+const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive, onShowSettings}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
@@ -30,6 +31,7 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
   const startLookAt = useRef(new THREE.Vector3());
   const targetPosition = useRef(new THREE.Vector3());
   const currentLookAt = useRef(new THREE.Vector3());
+  const [ showSettings, setShowSettings ] = useState(false);
   const focusOnCube = () => {
     if(isAnimating.current) return;
 
@@ -92,6 +94,7 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
   useEffect(() => {
     onDraggingChange(isDragging);
   },[isDragging, onDraggingChange]);
+  
   useEffect(() => {
     let previousMouseX = 0;
     const handleMouseMove = (event) => {
@@ -160,7 +163,7 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
           color={0xff0000}
           visible={true}
         />
-        {selected && !markerActive && (
+        {selected && !markerActive && !onShowSettings && (
           <>
             <Edges>
               <lineSegments>
@@ -169,53 +172,32 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive}) => {
               </lineSegments>
             </Edges>
             <Html position={[3,0.3,0]}>
-              <div style={{
-                padding: "8px",
-                gap: "8px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-start",
-                alignItems: "flex-start",
-                borderRadius: "4px",
-                border: "none",
-              }}>
-                <button style={{
-                  background: "white",
-                  margin: "auto",
-                  cursor: "grab",
-                }}
+              <div className="objectMenu">
+                <button className="objectButton"
                 onMouseDown={(e) =>{
                   e.stopPropagation();
                   setIsDragging(true);
                 }}
                 onMouseUp={() => setIsDragging(false)}
                 >
-                  <img src="src/assets/hand-pointer-solid.svg" style={{width: "20px"}} draggable="false"/>
+                  <Hand/>
                 </button>
-                <button style={{
-                  background: "white",
-                  margin: "auto",
-                  cursor: "grab",
-                  }}
+                <button className="objectButton"
                   onMouseDown={(e) => {
                     e.stopPropagation();
                     setIsRotating(true);
                   }}
                   onMouseUp={() => setIsRotating(false)}
-                  >
-                  <img src="src/assets/rotate-solid.svg" style={{width: "20px"}} draggable="false"/>
+                >
+                  <RotateCw/>
                 </button>
-                <button style={{
-                  background: "white",
-                  margin: "auto",
-                  cursor: "grab",
-                  }}
+                <button className="objectButton"
                   onClick={(e) => {
                     e.stopPropagation();
                     focusOnCube();
                   }}
-                  >
-                  <img src="src/assets/marker-solid.svg" style={{width: "20px"}} draggable="false"/>
+                >
+                  <PencilLine/>
                 </button>
               </div>
             </Html>
@@ -249,6 +231,12 @@ const App = () => {
   const [isRotating, setIsRotating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [markerActive, setMarkerActive] = useState(false);
+  const [ showSettings, setShowSettings ] = useState(false);
+  const [ fogLevel, setFogLevel ] = useState(200);
+  const [ gridValue1, setGridValue1 ] = useState(2);
+  const [ gridValue2, setGridValue2 ] = useState(6);
+  
+  
   const handleRotatingChange = (rotating) => {
 
     setIsRotating(rotating);
@@ -259,23 +247,32 @@ const App = () => {
   const handleMarkerActive = (marker) => {
     setMarkerActive(marker);
   };
+  
   const startPos = new THREE.Vector3(0,10,5);
   return (
     <div className="App">
       <Canvas camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-        <OrbitControls enabled={!isRotating && !isDragging && !markerActive} makeDefault/>
+        <OrbitControls enabled={!isRotating && !isDragging && !markerActive && !showSettings} makeDefault/>
         <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
         <color attach="background" args={["#3057E1"]}/>
-        <InfiniteGrid size1={2} size2={10} color={0xffffff} distance={200} axes="xzy"/>
+        <InfiniteGrid size1={gridValue1} size2={gridValue2} color={0xffffff} distance={fogLevel} axes="xzy"/>
         {!markerActive &&
-          <GizmoHelper
-          alignment="bottom-right" margin={[80,80]} >
+          <GizmoHelper alignment="bottom-right" margin={[80,80]} >
             <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
           </GizmoHelper>
         }
-        <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive}/>
-        <UserInterface/>
+        <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive} onShowSettings={showSettings}/>
       </Canvas>
+      <UserInterface 
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        fogLevel={fogLevel}
+        setFogLevel={setFogLevel}
+        gridValue1={gridValue1}
+        setGridValue1={setGridValue1}
+        gridValue2={gridValue2}
+        setGridValue2={setGridValue2}
+      />
     </div>
 
   )

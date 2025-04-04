@@ -261,3 +261,25 @@ input[type="range"]:disabled::-moz-range-thumb {
 	align-items: center;
 	margin-right: 105px;
 }
+.objectMenu{
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.objectButton{
+	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+	background-color: #222831;
+	transition: 0.5s;
+	border: 0;
+	width: 60px;
+	height:	60px;
+	display: flex;
+	align-items: center;
+}
+.objectButton:hover{  
+	background-color: #393E46;
+	transition: 0.5s;
+}
+.objectButton:active{
+	background-color: #393E46;
+}
