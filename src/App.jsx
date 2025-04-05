@@ -5,7 +5,7 @@ import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
 import "./App.css";
-import { Hand, PencilLine, RotateCw } from "lucide-react";
+import { Hand, PencilLine, RotateCw, X } from "lucide-react";
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
   
@@ -15,13 +15,12 @@ const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 80
     />
   );
 };
-const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive, onShowSettings}) => {
+const CubeR = ({id,position,onDraggingChange, onRotatingChange, onMarkerActive, onShowSettings, selectedId, setSelectedId, anyMarkerActive}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
   const isAnimating = useRef(false);
   const animationProgress = useRef(0);
-  const [selected, setSelected] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
   const [markerActive, setMarkerActive] = useState(false);
@@ -31,7 +30,9 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive, onShowSettin
   const startLookAt = useRef(new THREE.Vector3());
   const targetPosition = useRef(new THREE.Vector3());
   const currentLookAt = useRef(new THREE.Vector3());
-  const [ showSettings, setShowSettings ] = useState(false);
+
+  const isSelected = selectedId === id;
+
   const focusOnCube = () => {
     if(isAnimating.current) return;
 
@@ -146,29 +147,36 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive, onShowSettin
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
-      <mesh ref={meshRef} position={[0,2,0]} onClick={(e) => {
-        if(markerActive) {
-          e.stopPropagation();
+      <mesh ref={meshRef} position={position} 
+      onClick={(e) => {
+        e.stopPropagation();
+
+        if(anyMarkerActive) {
           return;
         }
-        e.stopPropagation();
-        setSelected(!selected);
+        if(isSelected){
+          setSelectedId(null);
+        } else {
+          setSelectedId(id);
+        }
+        console.log("id aa",id);
+        console.log("id ss",selectedId);
       }}>
         <boxGeometry args={[6,0.5,5]}/>
         <pointLight position={[0,2,0]} intensity={10} color={0xffffff}/>
-        <meshLambertMaterial color="595959" emissive={"#595959"}/>
+        <meshLambertMaterial color={0x595959} emissive={0x595959}/>
         <arrowHelper
           ref={arrowRef}
           position={[0, 0.25, 2.5]}
           color={0xff0000}
           visible={true}
         />
-        {selected && !markerActive && !onShowSettings && (
+        {isSelected && !anyMarkerActive && !onShowSettings && (
           <>
             <Edges>
               <lineSegments>
-                <edgesGeometry attach="geometry" args={[meshRef.current.geometry]} />
-                <lineBasicMaterial color={"0xff0000"}/>
+                <edgesGeometry attach="geometry" args={[meshRef.current.geometry]}/>
+                <lineBasicMaterial color={0xff0000}/>
               </lineSegments>
             </Edges>
             <Html position={[3,0.3,0]}>
@@ -207,16 +215,12 @@ const CubeR = ({onDraggingChange, onRotatingChange, onMarkerActive, onShowSettin
         {markerActive && (
           <>
             <Html position={[4, 0.3, -4]}>
-              <button style={{ 
-                background: "white",
-                margin: "auto",
-                cursor: "grab",}}
+              <button className="objectButton"
                 onClick={(e) => {
                   e.stopPropagation();
                   exitMarker();
                 }}>
-                  <img src="src/assets/xmark-solid.svg" style={{width: "20px"}} draggable="false"/>
-
+                  <X/>
               </button>
             </Html>
           </>
@@ -232,11 +236,27 @@ const App = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [markerActive, setMarkerActive] = useState(false);
   const [ showSettings, setShowSettings ] = useState(false);
-  const [ fogLevel, setFogLevel ] = useState(200);
+  const [ fogLevel, setFogLevel ] = useState(100);
   const [ gridValue1, setGridValue1 ] = useState(2);
   const [ gridValue2, setGridValue2 ] = useState(6);
   
+  const [books, setBooks] = useState([]);
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [nextBookId, setNextBookId] = useState(1); 
   
+  const createNBook = () => {
+    const randomX = Math.floor(Math.random() * 20) - 10;
+    const randomZ = Math.floor(Math.random() * 20) - 10;
+
+    const newBook = {
+      id: nextBookId,
+      position: [randomX,2,randomZ]
+    }
+
+    setBooks([...books, newBook]);
+    setNextBookId(nextBookId + 1);
+
+  }
   const handleRotatingChange = (rotating) => {
 
     setIsRotating(rotating);
@@ -261,7 +281,21 @@ const App = () => {
             <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
           </GizmoHelper>
         }
-        <CubeR onDraggingChange={handleDraggingChange} onRotatingChange={handleRotatingChange} onMarkerActive={handleMarkerActive} onShowSettings={showSettings}/>
+
+        {books.map(book => (
+          <CubeR 
+            key={book.id}
+            id={book.id}
+            position={book.position}
+            onDraggingChange={handleDraggingChange}
+            onRotatingChange={handleRotatingChange} 
+            onMarkerActive={handleMarkerActive} 
+            onShowSettings={showSettings}
+            selectedId={selectedBookId}
+            setSelectedId={setSelectedBookId}
+            anyMarkerActive={markerActive}
+          />
+        ))}
       </Canvas>
       <UserInterface 
         showSettings={showSettings}
@@ -272,6 +306,7 @@ const App = () => {
         setGridValue1={setGridValue1}
         gridValue2={gridValue2}
         setGridValue2={setGridValue2}
+        createBook={createNBook}
       />
     </div>
 
