@@ -2,7 +2,7 @@ import { Settings, BookOpen, StickyNote, Star, MoveUpRight, Fullscreen } from "l
 import { useState } from "react";
 import { Html } from "@react-three/drei";
 
-const UserInterface = ({ showSettings, setShowSettings, fogLevel, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, anyMarkerActive}) => {
+const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColor, setBackgroundColor, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, anyMarkerActive}) => {
     return (
         <>
         {!anyMarkerActive &&
@@ -21,7 +21,8 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, setFogLevel, g
                     <h1 className="userInterface_settingsMenu_header">Settings</h1>
                     <div className="userInterface_settingsMenu_items">
                         <div className="item">
-                            <span className="settingsMenu_itemName">Background Color</span>
+                            <span className="settingsMenu_itemName">Background Color <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} /></span>
+
                         </div>
                         <div className="item">
                             <span className="settingsMenu_itemName">

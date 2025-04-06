@@ -246,7 +246,7 @@ const App = () => {
   const [ fogLevel, setFogLevel ] = useState(100);
   const [ gridValue1, setGridValue1 ] = useState(2);
   const [ gridValue2, setGridValue2 ] = useState(6);
-  
+  const [ backgroundColor, setBackgroundColor ] = useState("#3057E1");
   const [books, setBooks] = useState([]);
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [nextBookId, setNextBookId] = useState(1); 
@@ -277,7 +277,7 @@ const App = () => {
       <Canvas camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
         <OrbitControls enabled={!isRotating && !isDragging && !anyMarkerActive && !showSettings} makeDefault/>
         <spotLight position={[0,5,0]} intensity={10} color={0xffffff}/>
-        <color attach="background" args={["#3057E1"]}/>
+        <color attach="background" args={[backgroundColor]}/>
         <InfiniteGrid size1={gridValue1} size2={gridValue2} color={0xffffff} distance={fogLevel} axes="xzy"/>
         {!anyMarkerActive &&
           <GizmoHelper alignment="bottom-right" margin={[80,80]} >
@@ -304,6 +304,8 @@ const App = () => {
       <UserInterface 
         showSettings={showSettings}
         setShowSettings={setShowSettings}
+        backgroundColor={backgroundColor}
+        setBackgroundColor={setBackgroundColor}
         fogLevel={fogLevel}
         setFogLevel={setFogLevel}
         gridValue1={gridValue1}
