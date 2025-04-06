@@ -2,9 +2,10 @@ import { Settings, BookOpen, StickyNote, Star, MoveUpRight, Fullscreen } from "l
 import { useState } from "react";
 import { Html } from "@react-three/drei";
 
-const UserInterface = ({ showSettings, setShowSettings, fogLevel, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook }) => {
+const UserInterface = ({ showSettings, setShowSettings, fogLevel, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, anyMarkerActive}) => {
     return (
         <>
+        {!anyMarkerActive &&
             <div className="userInterface">
                 <button className="userInterface_settings_button" onClick={() => {setShowSettings(!showSettings)}}>
                     <Settings/> Settings
@@ -53,6 +54,7 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, setFogLevel, g
                 </div>
                 }
             </div>
+            }
         </>    
     )
 }
