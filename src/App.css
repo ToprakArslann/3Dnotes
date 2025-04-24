@@ -2,6 +2,7 @@
   font-family: "Poppins", sans-serif;
   width: 100vw;
   height: 100vh;
+  user-select: none;
 }
 input[type="range"] {
 	font-size: 1.5rem;
@@ -199,9 +200,18 @@ input[type="range"]:disabled::-moz-range-thumb {
   background-color: #222831;
   transition: 0.5s;
 }
+.userInterface_settings_button:focus{
+	outline: none;
+}
 .userInterface_settings_button:hover{  
   background-color: #393E46;
   transition: 0.5s;
+}
+.footerText{
+	position: absolute;
+	bottom: 5px;
+	left: 50%;
+	transform: translate(-50%,-50%);
 }
 .userInterface_inventory{
   position: absolute;
@@ -218,6 +228,9 @@ input[type="range"]:disabled::-moz-range-thumb {
   height: 80px;
   background-color: #222831;
   transition: 0.5s;
+}
+.userInterface_inventory_item:focus{
+	outline: none;
 }
 .userInterface_inventory_item:hover{
   background-color: #393E46;
@@ -276,6 +289,9 @@ input[type="range"]:disabled::-moz-range-thumb {
 	height:	60px;
 	display: flex;
 	align-items: center;
+}
+.objectButton:focus{
+	outline: none;
 }
 .objectButton:hover{  
 	background-color: #393E46;

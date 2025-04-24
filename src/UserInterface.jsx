@@ -16,6 +16,7 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                     <button className="userInterface_inventory_item"><Star/></button>
                     <button className="userInterface_inventory_item"><MoveUpRight/></button>
                 </div>
+                <p className="footerText">Made with ❤️ by <a style={{color: "Red"}} href="https://www.github.com/ToprakArslann">Toprak Arslan</a></p>
                 {showSettings && 
                 <div className="userInterface_settingsMenu">
                     <h1 className="userInterface_settingsMenu_header">Settings</h1>
