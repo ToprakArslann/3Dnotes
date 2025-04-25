@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport, useGLTF, Stage } from "@react-three/drei";
+import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport, useGLTF, Stage, Environment } from "@react-three/drei";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
@@ -21,14 +21,16 @@ const NoteBook = ({ url}) => {
   const { scene } = useGLTF(url);
   const group = useRef();
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
-  return (<group
-    ref={group}
-    position={[0,0,0]}
-    scale={[1,1,1]}
-    rotation={[0,1.56,0]}
-  >
-    <primitive object={clonedScene}/>
-  </group>)
+  return (
+    <group
+      ref={group}
+      position={[0,0,0]}
+      scale={2}
+      rotation={[0,0,0]}
+    >
+      <primitive object={clonedScene}/>
+    </group>
+  )
 }; 
 const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected}) => {
   const meshRef = useRef();
@@ -242,91 +244,89 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
-      <Stage environment="city" adjustCamera={0} intensity={0.6}>
-        <mesh ref={meshRef} position={position} 
-        onClick={handleMeshClick}>
-          <NoteBook url="NoteBookSSS.glb"/>
-          <arrowHelper
-            ref={arrowRef}
-            position={[0, 0.25, 2.5]}
-            color={0xff0000}
-            visible={true}
-          />
-          {isSelected && !anyMarkerActive && !onShowSettings && (
-            <>
-              <Html position={[3,0.3,0]}>
-                <div className="objectMenu">
-                  <button className="objectButton"
-                  onMouseDown={(e) =>{
+      <mesh ref={meshRef} position={position} 
+      onClick={handleMeshClick}>
+        <NoteBook url="NoteBookSSS.glb"/>
+        <arrowHelper
+          ref={arrowRef}
+          position={[0, 0.25, 2.5]}
+          color={0xff0000}
+          visible={true}
+        />
+        {isSelected && !anyMarkerActive && !onShowSettings && (
+          <>
+            <Html position={[3,0.3,0]}>
+              <div className="objectMenu">
+                <button className="objectButton"
+                onMouseDown={(e) =>{
+                  e.stopPropagation();
+                  setIsDragging(true);
+                  const mouse = new THREE.Vector2();
+                  mouse.x = (e.clientX / gl.domElement.clientWidth) * 2 - 1;
+                  mouse.y = -(e.clientY / gl.domElement.clientHeight) * 2 + 1;
+                  
+                  const raycaster = new THREE.Raycaster();
+                  raycaster.setFromCamera(mouse, camera);
+                  const point = new THREE.Vector3();
+                  raycaster.ray.intersectPlane(plane, point);
+                  
+                  lastMousePosition.current.copy(point);
+                  if (meshRef.current) {
+                    objectInitialPosition.current.copy(meshRef.current.position);
+                  }
+                }}
+                onMouseUp={() => setIsDragging(false)}
+                >
+                  <Hand/>
+                </button>
+                <button className="objectButton"
+                  onMouseDown={(e) => {
                     e.stopPropagation();
-                    setIsDragging(true);
+                    setIsRotating(true);
                     const mouse = new THREE.Vector2();
                     mouse.x = (e.clientX / gl.domElement.clientWidth) * 2 - 1;
                     mouse.y = -(e.clientY / gl.domElement.clientHeight) * 2 + 1;
                     
-                    const raycaster = new THREE.Raycaster();
-                    raycaster.setFromCamera(mouse, camera);
-                    const point = new THREE.Vector3();
-                    raycaster.ray.intersectPlane(plane, point);
-                    
-                    lastMousePosition.current.copy(point);
-                    if (meshRef.current) {
-                      objectInitialPosition.current.copy(meshRef.current.position);
-                    }
+                    lastMousePosition.current.x = mouse.x;
+                    lastMousePosition.current.y = mouse.y;
                   }}
-                  onMouseUp={() => setIsDragging(false)}
-                  >
-                    <Hand/>
-                  </button>
-                  <button className="objectButton"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      setIsRotating(true);
-                      const mouse = new THREE.Vector2();
-                      mouse.x = (e.clientX / gl.domElement.clientWidth) * 2 - 1;
-                      mouse.y = -(e.clientY / gl.domElement.clientHeight) * 2 + 1;
-                      
-                      lastMousePosition.current.x = mouse.x;
-                      lastMousePosition.current.y = mouse.y;
-                    }}
-                    onMouseUp={() => setIsRotating(false)}
-                  >
-                    <RotateCw/>
-                  </button>
-                  <button className="objectButton"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      focusOnCube();
-                    }}
-                  >
-                    <PencilLine/>
-                  </button>
-                  <button className="objectButton">
-                    <ArrowRight/>
-                  </button>
-                  <button className="objectButton">
-                    <ArrowLeft/>
-                  </button>
-                </div>
-              </Html>
-            </>
-          )}
-          
-          {markerActive && (
-            <>
-              <Html position={[4, 0.3, -4]}>
+                  onMouseUp={() => setIsRotating(false)}
+                >
+                  <RotateCw/>
+                </button>
                 <button className="objectButton"
                   onClick={(e) => {
                     e.stopPropagation();
-                    exitMarker();
-                  }}>
-                    <X/>
+                    focusOnCube();
+                  }}
+                >
+                  <PencilLine/>
                 </button>
-              </Html>
-            </>
-          )}
-        </mesh>
-      </Stage>
+                <button className="objectButton">
+                  <ArrowRight/>
+                </button>
+                <button className="objectButton">
+                  <ArrowLeft/>
+                </button>
+              </div>
+            </Html>
+          </>
+        )}
+        
+        {markerActive && (
+          <>
+            <Html position={[4, 0.3, -4]}>
+              <button className="objectButton"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  exitMarker();
+                }}>
+                  <X/>
+              </button>
+            </Html>
+          </>
+        )}
+      </mesh>
     </>
   )
 }
@@ -368,9 +368,10 @@ const App = () => {
   const startPos = new THREE.Vector3(0,10,5);
   return (
     <div className="App">
-      <Canvas camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <Canvas shadows camera={{position: [startPos.x,startPos.y,startPos.z]}} gl={{antialias: true}} style={{height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
         <OrbitControls enabled={!isRotating && !isDragging && !anyMarkerActive && !showSettings} makeDefault/>
         <color attach="background" args={[backgroundColor]}/>
+        <Environment preset="city"/>
         <InfiniteGrid size1={gridValue1} size2={gridValue2} color={0xffffff} distance={fogLevel} axes="xzy"/>
         {!anyMarkerActive &&
           <GizmoHelper alignment="bottom-right" margin={[80,80]} >
