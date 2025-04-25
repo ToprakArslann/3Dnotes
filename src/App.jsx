@@ -1,11 +1,11 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport, useGLTF, Stage, Environment } from "@react-three/drei";
+import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport, useGLTF, Stage, Environment, useAnimations } from "@react-three/drei";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
 import "./App.css";
-import { ArrowLeft, ArrowRight, Hand, PencilLine, RotateCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Hand, PencilLine, RotateCw, X } from "lucide-react";
 
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
@@ -17,21 +17,47 @@ const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 80
   );
 };
 
-const NoteBook = ({ url}) => {
-  const { scene } = useGLTF(url);
+const NoteBook = ({ url, isOpen }) => {
+  const { scene, animations } = useGLTF(url);
   const group = useRef();
+  const { actions } = useAnimations(animations, group);
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
+  const [currentAction, setCurrentAction] = useState(null);
+  const prevIsOpen = useRef(isOpen);
+
+  useEffect(() => {
+    const action = actions["OpenAction"];
+    if (action && !currentAction) {
+      action.reset().setLoop(THREE.LoopOnce, 1).play();
+      action.clampWhenFinished = true;
+      setCurrentAction(action);      
+    }
+  }, [actions]);
+
+  useEffect(() => {
+    if (!actions || prevIsOpen.current === isOpen) return;
+
+    const newActionName = isOpen ? "OpenAction" : "CloseAction";
+    const newAction = actions[newActionName];
+    
+    if (currentAction) currentAction.stop();
+    newAction.reset().setLoop(THREE.LoopOnce, 1).play();
+    newAction.clampWhenFinished = true;
+    setCurrentAction(newAction);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, actions]);
+
   return (
     <group
       ref={group}
       position={[0,0,0]}
       scale={2}
-      rotation={[0,0,0]}
+      rotation={[0,Math.PI,0]}
     >
       <primitive object={clonedScene}/>
     </group>
   )
-}; 
+};
 const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
@@ -52,7 +78,17 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const lastMousePosition = useRef(new THREE.Vector3());
   const initialGrabPosition = useRef(new THREE.Vector3());
   const objectInitialPosition = useRef(new THREE.Vector3());
+  const [isOpen, setIsOpen] = useState(true);
+  const [animationCooldown, setAnimationCooldown] = useState(false);
 
+  const toggleOpen = () => {
+    if (animationCooldown) return; 
+    setIsOpen(!isOpen);
+    setAnimationCooldown(true); 
+    setTimeout(() => {
+      setAnimationCooldown(false); 
+    }, 1100);
+  };
   const focusOnCube = () => {
     if(isAnimating.current) return;
     setSelectedId(null);
@@ -246,7 +282,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       <OrbitControls ref={controlsRef} enabled={false}/>
       <mesh ref={meshRef} position={position} 
       onClick={handleMeshClick}>
-        <NoteBook url="NoteBookSSS.glb"/>
+        <NoteBook url="NoteBookSSS.glb" isOpen={isOpen}/>
         <arrowHelper
           ref={arrowRef}
           position={[0, 0.25, 2.5]}
@@ -255,7 +291,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         />
         {isSelected && !anyMarkerActive && !onShowSettings && (
           <>
-            <Html position={[3,0.3,0]}>
+            <Html position={[5,0.5,-5]}>
               <div className="objectMenu">
                 <button className="objectButton"
                 onMouseDown={(e) =>{
@@ -307,6 +343,11 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                 </button>
                 <button className="objectButton">
                   <ArrowLeft/>
+                </button>
+                <button className="objectButton" onClick={() => {
+                  toggleOpen();
+                }}>
+                  <BookOpen/>
                 </button>
               </div>
             </Html>

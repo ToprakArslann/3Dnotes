@@ -1,4 +1,4 @@
-import { Settings, BookOpen, StickyNote, Star, MoveUpRight, Fullscreen } from "lucide-react";
+import { Settings, BookOpen, StickyNote, Star, MoveUpRight, Fullscreen, BookOpenText } from "lucide-react";
 import { useState } from "react";
 import { Html } from "@react-three/drei";
 
@@ -11,7 +11,7 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                     <Settings/> Settings
                 </button>
                 <div className="userInterface_inventory">
-                    <button className="userInterface_inventory_item" onClick={createBook}><BookOpen/></button>
+                    <button className="userInterface_inventory_item" onClick={createBook}><BookOpenText/></button>
                     <button className="userInterface_inventory_item"><StickyNote/></button>
                     <button className="userInterface_inventory_item"><Star/></button>
                     <button className="userInterface_inventory_item"><MoveUpRight/></button>
