@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, Edges, GizmoHelper, GizmoViewport, useGLTF, Stage, Environment, useAnimations } from "@react-three/drei";
+import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane} from "@react-three/drei";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
@@ -67,7 +67,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [markerActive, setMarkerActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
-  const {camera, gl, controls} = useThree();
+  const {camera, gl, controls, raycaster} = useThree();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 2);
   const startPosition = useRef(new THREE.Vector3());
   const startLookAt = useRef(new THREE.Vector3());
@@ -80,6 +80,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const objectInitialPosition = useRef(new THREE.Vector3());
   const [isOpen, setIsOpen] = useState(true);
   const [animationCooldown, setAnimationCooldown] = useState(false);
+  const [planeClickPosition, setPlaneClickPosition] = useState({x:0, y:0});
+  const planeRef = useRef();
 
   const toggleOpen = () => {
     if (animationCooldown) return; 
@@ -277,97 +279,161 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
+  const handlePlaneClick = (event) => {
+    event.stopPropagation();
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(planeRef.current);
+
+    if (intersects.length > 0){
+      const { point, uv } = intersects[0];
+      
+      // Plane'in genişliği ve yüksekliği (args'ta tanımladığımız değerler)
+      const planeWidth = 4.3;
+      const planeHeight = 6.6;
+      
+      // UV koordinatlarını plane'in yerel koordinatlarına dönüştürüyoruz
+      // UV koordinatları 0-1 arasındadır, bunları plane boyutlarına göre ölçeklendiriyoruz
+      const localX = (uv.x - 0.5) * planeWidth;
+      const localY = (uv.y - 0.5) * planeHeight;
+      
+      // Yerel pozisyonu state'e kaydediyoruz
+      setPlaneClickPosition({ x: localX, y: localY });
+      
+      console.log('Plane üzerindeki yerel tıklama noktası:', { x: localX, y: localY });
+    }
+  };
+  const createTextTexture = (text , fontSize = 100) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    // Canvas boyutunu metne göre ayarla
+    ctx.font = `${fontSize}px Arial`
+    const metrics = ctx.measureText(text)
+    canvas.width = metrics.width * 1.2 // %20 padding
+    canvas.height = fontSize * 1.5
+    
+    // Şeffaf arkaplan + anti-aliasing
+    ctx.fillStyle = "rgba(0,0,0,0)" // Tam şeffaf
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    
+    ctx.font = `${fontSize}px Arial`
+    ctx.fillStyle = "black"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    
+    // Kenar yumuşatma için özel kompozisyon
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.translate(0.5, 0.5) // Sub-pixel düzeltme
+    ctx.fillText(text, canvas.width/2, canvas.height/2)
+    
+    return new THREE.CanvasTexture(canvas)
+  }
+
+  const textTexture = createTextTexture( "Lorem ipsum dolor sit amet.", 100 );
+
+  const textureAspect = textTexture.image.width / textTexture.image.height;
+  const decalWidth = 5;
+  const decalHeight = decalWidth / textureAspect;
+
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
-      <mesh ref={meshRef} position={position} 
-      onClick={handleMeshClick}>
-        <NoteBook url="NoteBookSSS.glb" isOpen={isOpen}/>
-        <arrowHelper
-          ref={arrowRef}
-          position={[0, 0.25, 2.5]}
-          color={0xff0000}
-          visible={true}
-        />
-        {isSelected && !anyMarkerActive && !onShowSettings && (
-          <>
-            <Html position={[5,0.5,-5]}>
-              <div className="objectMenu">
-                <button className="objectButton"
-                onMouseDown={(e) =>{
-                  e.stopPropagation();
-                  setIsDragging(true);
-                  const mouse = new THREE.Vector2();
-                  mouse.x = (e.clientX / gl.domElement.clientWidth) * 2 - 1;
-                  mouse.y = -(e.clientY / gl.domElement.clientHeight) * 2 + 1;
-                  
-                  const raycaster = new THREE.Raycaster();
-                  raycaster.setFromCamera(mouse, camera);
-                  const point = new THREE.Vector3();
-                  raycaster.ray.intersectPlane(plane, point);
-                  
-                  lastMousePosition.current.copy(point);
-                  if (meshRef.current) {
-                    objectInitialPosition.current.copy(meshRef.current.position);
-                  }
-                }}
-                onMouseUp={() => setIsDragging(false)}
-                >
-                  <Hand/>
-                </button>
-                <button className="objectButton"
-                  onMouseDown={(e) => {
+      <group ref={meshRef} position={position} >
+        <Plane ref={planeRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={isOpen} onClick={handlePlaneClick}>
+          <meshStandardMaterial opacity={0} transparent/>
+          <Decal scale={[decalWidth,decalHeight]} position={[planeClickPosition.x,planeClickPosition.y,0]} rotation={[0,0,0.50]} makeDefault >
+            <meshStandardMaterial map={textTexture} transparent/>
+          </Decal>
+        </Plane> 
+        <mesh 
+        onClick={handleMeshClick}>
+          <NoteBook url="NoteBookSSS.glb" isOpen={isOpen}/>
+          <arrowHelper
+            ref={arrowRef}
+            position={[0, 0.25, 2.5]}
+            color={0xff0000}
+            visible={true}
+          />
+          {isSelected && !anyMarkerActive && !onShowSettings && (
+            <>
+              <Html position={[5,0.5,-5]}>
+                <div className="objectMenu">
+                  <button className="objectButton"
+                  onMouseDown={(e) =>{
                     e.stopPropagation();
-                    setIsRotating(true);
+                    setIsDragging(true);
                     const mouse = new THREE.Vector2();
                     mouse.x = (e.clientX / gl.domElement.clientWidth) * 2 - 1;
                     mouse.y = -(e.clientY / gl.domElement.clientHeight) * 2 + 1;
                     
-                    lastMousePosition.current.x = mouse.x;
-                    lastMousePosition.current.y = mouse.y;
+                    const raycaster = new THREE.Raycaster();
+                    raycaster.setFromCamera(mouse, camera);
+                    const point = new THREE.Vector3();
+                    raycaster.ray.intersectPlane(plane, point);
+                    
+                    lastMousePosition.current.copy(point);
+                    if (meshRef.current) {
+                      objectInitialPosition.current.copy(meshRef.current.position);
+                    }
                   }}
-                  onMouseUp={() => setIsRotating(false)}
-                >
-                  <RotateCw/>
-                </button>
+                  onMouseUp={() => setIsDragging(false)}
+                  >
+                    <Hand/>
+                  </button>
+                  <button className="objectButton"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setIsRotating(true);
+                      const mouse = new THREE.Vector2();
+                      mouse.x = (e.clientX / gl.domElement.clientWidth) * 2 - 1;
+                      mouse.y = -(e.clientY / gl.domElement.clientHeight) * 2 + 1;
+                      
+                      lastMousePosition.current.x = mouse.x;
+                      lastMousePosition.current.y = mouse.y;
+                    }}
+                    onMouseUp={() => setIsRotating(false)}
+                  >
+                    <RotateCw/>
+                  </button>
+                  <button className="objectButton"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      focusOnCube();
+                    }}
+                  >
+                    <PencilLine/>
+                  </button>
+                  <button className="objectButton">
+                    <ArrowRight/>
+                  </button>
+                  <button className="objectButton">
+                    <ArrowLeft/>
+                  </button>
+                  <button className="objectButton" onClick={() => {
+                    toggleOpen();
+                  }}>
+                    <BookOpen/>
+                  </button>
+                </div>
+              </Html>
+            </>
+          )}
+          
+          {markerActive && (
+            <>
+              <Html position={[4, 0.3, -4]}>
                 <button className="objectButton"
                   onClick={(e) => {
                     e.stopPropagation();
-                    focusOnCube();
-                  }}
-                >
-                  <PencilLine/>
+                    exitMarker();
+                  }}>
+                    <X/>
                 </button>
-                <button className="objectButton">
-                  <ArrowRight/>
-                </button>
-                <button className="objectButton">
-                  <ArrowLeft/>
-                </button>
-                <button className="objectButton" onClick={() => {
-                  toggleOpen();
-                }}>
-                  <BookOpen/>
-                </button>
-              </div>
-            </Html>
-          </>
-        )}
-        
-        {markerActive && (
-          <>
-            <Html position={[4, 0.3, -4]}>
-              <button className="objectButton"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  exitMarker();
-                }}>
-                  <X/>
-              </button>
-            </Html>
-          </>
-        )}
-      </mesh>
+              </Html>
+            </>
+          )}
+        </mesh>
+      </group>
     </>
   )
 }
