@@ -1,4 +1,4 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, context, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane} from "@react-three/drei";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
@@ -82,6 +82,11 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [animationCooldown, setAnimationCooldown] = useState(false);
   const [planeClickPosition, setPlaneClickPosition] = useState({x:0, y:0});
   const planeRef = useRef();
+  const [pageContexts, setPageContexts] = useState([]);
+  const [nextContextId, setNextContextId] = useState(1);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [tempContextText, setTempContextText] = useState("");
+  const [selectedContextId, setSelectedContextId] = useState(null);
 
   const toggleOpen = () => {
     if (animationCooldown) return; 
@@ -279,6 +284,42 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
+  const createTextTexture = (text , fontSize = 100) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    ctx.font = `${fontSize}px Arial`;
+    const metrics = ctx.measureText(text);
+    
+    const textHeight = fontSize;
+    
+    const paddingX = fontSize * 0.5;
+    const paddingY = fontSize * 0.5;
+    
+    const canvasWidth = metrics.width + paddingX * 2;
+    const canvasHeight = textHeight + paddingY * 2;
+    
+    const scale = 2; 
+    canvas.width = canvasWidth * scale;
+    canvas.height = canvasHeight * scale;
+    
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "rgba(0,0,0,0)"; 
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    ctx.font = `${fontSize}px Arial`;
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    ctx.fillText(text, canvasWidth/2, canvasHeight/2);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.textWidth = canvasWidth;
+    texture.textHeight = canvasHeight;
+    
+    return texture;
+  }
   const handlePlaneClick = (event) => {
     event.stopPropagation();
     if(isOpen && markerActive){
@@ -295,39 +336,32 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         const localY = (uv.y - 0.5) * planeHeight;
         
         setPlaneClickPosition({ x: localX, y: localY });
+        setShowTextInput(true);
         
         console.log('Plane click position', { x: localX, y: localY });
       }
     }
   };
-  const createTextTexture = (text , fontSize = 100) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    ctx.font = `${fontSize}px Arial`
-    const metrics = ctx.measureText(text)
-    canvas.width = metrics.width * 1.2 
-    canvas.height = fontSize * 1.5
-    
-    ctx.fillStyle = "rgba(0,0,0,0)" 
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    
-    ctx.font = `${fontSize}px Arial`
-    ctx.fillStyle = "black"
-    ctx.textAlign = "center"
-    ctx.textBaseline = "middle"
-    
-    ctx.globalCompositeOperation = 'source-over'
-    ctx.translate(0.5, 0.5) 
-    ctx.fillText(text, canvas.width/2, canvas.height/2)
-    
-    return new THREE.CanvasTexture(canvas)
-  }
+  
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    if(tempContextText) {
+      const newContext ={
+        id: nextContextId,
+        context: tempContextText,
+        position: [planeClickPosition.x, planeClickPosition.y, 0],
+        rotation: [0,0,0]
+      };
 
-  const textTexture = createTextTexture( "Lorem ipsum dolor sit amet.", 100 );
+      setPageContexts([...pageContexts, newContext]);
+      setNextContextId(nextContextId+1);
 
-  const textureAspect = textTexture.image.width / textTexture.image.height;
-  const decalWidth = 5;
-  const decalHeight = decalWidth / textureAspect;
+      setTempContextText("");
+      setShowTextInput(false);
+    }
+  };
+  
+
 
   return(
     <>
@@ -335,10 +369,41 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       <group ref={meshRef} position={position} >
         <Plane ref={planeRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={isOpen} onClick={handlePlaneClick}>
           <meshStandardMaterial opacity={0} transparent/>
-          <Decal scale={[decalWidth,decalHeight]} position={[planeClickPosition.x,planeClickPosition.y,0]} rotation={[0,0,0.50]} makeDefault >
-            <meshStandardMaterial map={textTexture} transparent/>
-          </Decal>
-        </Plane> 
+          {pageContexts.map((contextItem) => {
+            const textTexture = createTextTexture(contextItem.context);
+            const fixedHeight = 0.5;
+            const fixedWidth = fixedHeight * (textTexture.textWidth / textTexture.textHeight);
+            
+            return(
+              <Decal
+              key={contextItem.id}
+              scale={[fixedWidth, fixedHeight]}
+              position={contextItem.position}
+              rotation={contextItem.rotation}>
+                <meshStandardMaterial map={textTexture} transparent polygonOffset={true} polygonOffsetFactor={-1}/>
+              </Decal>
+            )
+          })}
+        </Plane>
+        {showTextInput && markerActive && (
+          <Html position={[planeClickPosition.x - 2.6, 0.5, planeClickPosition.y]}>
+            <div style={{background: "white", padding: "10px", borderRadius: "5px"}}>
+              <form onSubmit={handleTextSubmit}>
+                <input
+                type="text"
+                value={tempContextText}
+                onChange={(e) => {
+                  setTempContextText(e.target.value);
+                }}
+                placeholder="Enter Text..."
+                style={{ width: "200px", padding: "5px"}}
+                autoFocus/>
+                <button type="submit">Add</button>
+                <button type="button" onClick={() => setShowTextInput(false)}>Cancel</button>
+              </form>
+            </div>
+          </Html>
+        )} 
         <mesh 
         onClick={handleMeshClick}>
           <NoteBook url="NoteBookSSS.glb" isOpen={isOpen}/>
