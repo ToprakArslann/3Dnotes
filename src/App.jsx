@@ -281,39 +281,34 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   }, []);
   const handlePlaneClick = (event) => {
     event.stopPropagation();
+    if(isOpen && markerActive){
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(planeRef.current);
 
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(planeRef.current);
-
-    if (intersects.length > 0){
-      const { point, uv } = intersects[0];
-      
-      // Plane'in genişliği ve yüksekliği (args'ta tanımladığımız değerler)
-      const planeWidth = 4.3;
-      const planeHeight = 6.6;
-      
-      // UV koordinatlarını plane'in yerel koordinatlarına dönüştürüyoruz
-      // UV koordinatları 0-1 arasındadır, bunları plane boyutlarına göre ölçeklendiriyoruz
-      const localX = (uv.x - 0.5) * planeWidth;
-      const localY = (uv.y - 0.5) * planeHeight;
-      
-      // Yerel pozisyonu state'e kaydediyoruz
-      setPlaneClickPosition({ x: localX, y: localY });
-      
-      console.log('Plane üzerindeki yerel tıklama noktası:', { x: localX, y: localY });
+      if (intersects.length > 0){
+        const { point, uv } = intersects[0];
+        
+        const planeWidth = 4.3;
+        const planeHeight = 6.6;
+        
+        const localX = (uv.x - 0.5) * planeWidth;
+        const localY = (uv.y - 0.5) * planeHeight;
+        
+        setPlaneClickPosition({ x: localX, y: localY });
+        
+        console.log('Plane click position', { x: localX, y: localY });
+      }
     }
   };
   const createTextTexture = (text , fontSize = 100) => {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
-    // Canvas boyutunu metne göre ayarla
     ctx.font = `${fontSize}px Arial`
     const metrics = ctx.measureText(text)
-    canvas.width = metrics.width * 1.2 // %20 padding
+    canvas.width = metrics.width * 1.2 
     canvas.height = fontSize * 1.5
     
-    // Şeffaf arkaplan + anti-aliasing
-    ctx.fillStyle = "rgba(0,0,0,0)" // Tam şeffaf
+    ctx.fillStyle = "rgba(0,0,0,0)" 
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     
     ctx.font = `${fontSize}px Arial`
@@ -321,9 +316,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
     
-    // Kenar yumuşatma için özel kompozisyon
     ctx.globalCompositeOperation = 'source-over'
-    ctx.translate(0.5, 0.5) // Sub-pixel düzeltme
+    ctx.translate(0.5, 0.5) 
     ctx.fillText(text, canvas.width/2, canvas.height/2)
     
     return new THREE.CanvasTexture(canvas)
