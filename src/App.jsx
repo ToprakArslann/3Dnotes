@@ -346,11 +346,14 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if(tempContextText) {
+      const textTexture = createTextTexture(tempContextText);
+
       const newContext ={
         id: nextContextId,
         context: tempContextText,
         position: [planeClickPosition.x, planeClickPosition.y, 0],
-        rotation: [0,0,0]
+        rotation: [0,0,0],
+        textTexture,
       };
 
       setPageContexts([...pageContexts, newContext]);
@@ -369,20 +372,19 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       <group ref={meshRef} position={position} >
         <Plane ref={planeRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={isOpen} onClick={handlePlaneClick}>
           <meshStandardMaterial opacity={0} transparent/>
-          {pageContexts.map((contextItem) => {
-            const textTexture = createTextTexture(contextItem.context);
+          {pageContexts.map((contextItem) => { 
             const fixedHeight = 0.5;
-            const fixedWidth = fixedHeight * (textTexture.textWidth / textTexture.textHeight);
-            
+            const fixedWidth = fixedHeight * (contextItem.textTexture.textWidth / contextItem.textTexture.textHeight);
+                      
             return(
               <Decal
               key={contextItem.id}
               scale={[fixedWidth, fixedHeight]}
               position={contextItem.position}
               rotation={contextItem.rotation}>
-                <meshStandardMaterial map={textTexture} transparent polygonOffset={true} polygonOffsetFactor={-1}/>
+                <meshStandardMaterial map={contextItem.textTexture} transparent/>
               </Decal>
-            )
+            );
           })}
         </Plane>
         {showTextInput && markerActive && (
