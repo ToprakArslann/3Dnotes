@@ -388,7 +388,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           })}
         </Plane>
         {showTextInput && markerActive && (
-          <Html position={[planeClickPosition.x - 2.6, 0.5, planeClickPosition.y]}>
+          <Html position={[planeClickPosition.x - 2.6, 0, -planeClickPosition.y]}>
             <div style={{background: "white", padding: "10px", borderRadius: "5px"}}>
               <form onSubmit={handleTextSubmit}>
                 <input
@@ -408,7 +408,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         )} 
         <mesh 
         onClick={handleMeshClick}>
-          <NoteBook url="NoteBookSSS.glb" isOpen={isOpen}/>
+          <NoteBook url="/3Dnotes/NoteBookSSS.glb" isOpen={isOpen}/>
           <arrowHelper
             ref={arrowRef}
             position={[0, 0.25, 2.5]}
@@ -580,5 +580,5 @@ const App = () => {
 
   )
 }
-useGLTF.preload("NoteBookSSS.glb");
+useGLTF.preload("/3Dnotes/NoteBookSSS.glb");
 export default App;
