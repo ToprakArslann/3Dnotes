@@ -1,5 +1,5 @@
 import { Canvas, context, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane} from "@react-three/drei";
+import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane,Text, Billboard} from "@react-three/drei";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
@@ -359,6 +359,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     }
   };
   const handleNextPage = () => {
+    if(rightPage >= 30) return;
     setLeftPage(leftPage + 2);
     setRightPage(rightPage + 2);
   };
@@ -413,6 +414,9 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
               </Decal>
             );
           })}
+          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.0001]}>
+            {leftPage}
+          </Text>
         </Plane>  
         <Plane ref={planeRightRef} args={[4.3,6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e, "right"); }}>
           <meshStandardMaterial opacity={0} transparent/>
@@ -430,9 +434,12 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
               </Decal>
             );
           })}
+          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.0001]}>
+            {rightPage}
+          </Text>
         </Plane>  
         {showTextInput && markerActive && (
-          <Html position={[planeClickPosition.x - 2.6, 0, -planeClickPosition.y]}>
+          <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>
             <div style={{background: "white", padding: "10px", borderRadius: "5px"}}>
               <form onSubmit={handleTextSubmit}>
                 <input
