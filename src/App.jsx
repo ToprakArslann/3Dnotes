@@ -79,6 +79,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const initialGrabPosition = useRef(new THREE.Vector3());
   const objectInitialPosition = useRef(new THREE.Vector3());
   const [isOpen, setIsOpen] = useState(true);
+  const [pageVisible, setPageVisible] = useState(false);
   const [animationCooldown, setAnimationCooldown] = useState(false);
   const [planeClickPosition, setPlaneClickPosition] = useState({x:0, y:0});
   const planeRef = useRef();
@@ -167,7 +168,17 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   function easeInOutCubic(x) {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
-  
+  useEffect(() => {
+    if (isOpen){
+      const timeout = setTimeout(() => {
+        setPageVisible(true);
+      }, 1100);
+      return () => clearTimeout(timeout);
+    }
+    else{
+      setPageVisible(false);
+    }
+  }, [isOpen]);
   useEffect(() => {
     if(meshRef.current){
       objectInitialPosition.current.copy(meshRef.current.position);
@@ -370,7 +381,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
       <group ref={meshRef} position={position} >
-        <Plane ref={planeRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={isOpen} onClick={handlePlaneClick}>
+        <Plane ref={planeRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={handlePlaneClick}>
           <meshStandardMaterial opacity={0} transparent/>
           {pageContexts.map((contextItem) => { 
             const fixedHeight = 0.5;
