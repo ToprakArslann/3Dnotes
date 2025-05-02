@@ -82,7 +82,11 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [pageVisible, setPageVisible] = useState(false);
   const [animationCooldown, setAnimationCooldown] = useState(false);
   const [planeClickPosition, setPlaneClickPosition] = useState({x:0, y:0});
-  const planeRef = useRef();
+  const planeLeftRef = useRef();
+  const planeRightRef = useRef();
+  const [activePlane, setActivePlane] = useState(null);
+  const [leftPage, setLeftPage] = useState(1);
+  const [rightPage, setRightPage] = useState(2);
   const [pageContexts, setPageContexts] = useState([]);
   const [nextContextId, setNextContextId] = useState(1);
   const [showTextInput, setShowTextInput] = useState(false);
@@ -198,8 +202,9 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     console.log("id ss",selectedId);
     console.log("id vv",isSelected);
     console.log("aaaaaaa",markerActive);
+    console.log("leftright",leftPage,rightPage);
 
-  }, [id, selectedId, isSelected]);
+  }, [id, selectedId, isSelected, leftPage, rightPage]);
   useEffect(() => {
     const handleMouseDown = (event) => {
       if((!isDragging && !isRotating)|| !meshRef.current) return;
@@ -331,11 +336,11 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     
     return texture;
   }
-  const handlePlaneClick = (event) => {
-    event.stopPropagation();
+  const handlePlaneClick = (event, planeSide) => {
+    setActivePlane(planeSide);
     if(isOpen && markerActive){
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(planeRef.current);
+      const intersects = raycaster.intersectObject(planeSide === "left" ? planeLeftRef.current : planeRightRef.current);
 
       if (intersects.length > 0){
         const { point, uv } = intersects[0];
@@ -353,6 +358,16 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       }
     }
   };
+  const handleNextPage = () => {
+    setLeftPage(leftPage + 2);
+    setRightPage(rightPage + 2);
+  };
+  const handlePrevPage = () => {
+    if(leftPage > 1){
+      setLeftPage(leftPage - 2);
+      setRightPage(rightPage - 2);
+    }
+  }
   
   const handleTextSubmit = (e) => {
     e.preventDefault();
@@ -365,6 +380,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         position: [planeClickPosition.x, planeClickPosition.y, 0],
         rotation: [0,0,0],
         textTexture,
+        pageNumber: activePlane === "left" ? leftPage : rightPage,
       };
 
       setPageContexts([...pageContexts, newContext]);
@@ -380,10 +396,10 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
-      <group ref={meshRef} position={position} >
-        <Plane ref={planeRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={handlePlaneClick}>
+      <group ref={meshRef} position={position}>
+        <Plane ref={planeLeftRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e,"left"); }}>
           <meshStandardMaterial opacity={0} transparent/>
-          {pageContexts.map((contextItem) => { 
+          {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map((contextItem) => { 
             const fixedHeight = 0.5;
             const fixedWidth = fixedHeight * (contextItem.textTexture.textWidth / contextItem.textTexture.textHeight);
                       
@@ -397,7 +413,24 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
               </Decal>
             );
           })}
-        </Plane>
+        </Plane>  
+        <Plane ref={planeRightRef} args={[4.3,6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e, "right"); }}>
+          <meshStandardMaterial opacity={0} transparent/>
+          {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map((contextItem) => { 
+            const fixedHeight = 0.5;
+            const fixedWidth = fixedHeight * (contextItem.textTexture.textWidth / contextItem.textTexture.textHeight);
+                      
+            return(
+              <Decal
+              key={contextItem.id}
+              scale={[fixedWidth, fixedHeight]}
+              position={contextItem.position}
+              rotation={contextItem.rotation}>
+                <meshStandardMaterial map={contextItem.textTexture} transparent/>
+              </Decal>
+            );
+          })}
+        </Plane>  
         {showTextInput && markerActive && (
           <Html position={[planeClickPosition.x - 2.6, 0, -planeClickPosition.y]}>
             <div style={{background: "white", padding: "10px", borderRadius: "5px"}}>
@@ -475,10 +508,16 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                   >
                     <PencilLine/>
                   </button>
-                  <button className="objectButton">
+                  <button className="objectButton" onClick={(e) => {
+                    e.stopPropagation();
+                    handleNextPage();
+                  }}>
                     <ArrowRight/>
                   </button>
-                  <button className="objectButton">
+                  <button className="objectButton" onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrevPage();
+                    }}>
                     <ArrowLeft/>
                   </button>
                   <button className="objectButton" onClick={() => {
@@ -500,6 +539,18 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                     exitMarker();
                   }}>
                     <X/>
+                </button>
+                <button className="objectButton" onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextPage();
+                }}>
+                  <ArrowRight/>
+                </button>
+                <button className="objectButton" onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevPage();
+                }}>
+                  <ArrowLeft/>
                 </button>
               </Html>
             </>
