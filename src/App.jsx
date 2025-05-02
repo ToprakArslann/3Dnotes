@@ -414,7 +414,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
               </Decal>
             );
           })}
-          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.0001]}>
+          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
             {leftPage}
           </Text>
         </Plane>  
@@ -434,7 +434,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
               </Decal>
             );
           })}
-          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.0001]}>
+          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
             {rightPage}
           </Text>
         </Plane>  
