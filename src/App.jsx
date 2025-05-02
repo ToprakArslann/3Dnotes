@@ -92,7 +92,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [showTextInput, setShowTextInput] = useState(false);
   const [tempContextText, setTempContextText] = useState("");
   const [selectedContextId, setSelectedContextId] = useState(null);
-
+  const [fontSize, setFontSize] = useState(20);
   const toggleOpen = () => {
     if (animationCooldown) return; 
     setIsOpen(!isOpen);
@@ -300,42 +300,54 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
-  const createTextTexture = (text , fontSize = 100) => {
+  const createTextTexture = (text, fontSize = 20) => {
+    const actualFontSize = fontSize;
+    
+    const lines = text.split('\n');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+  
+    ctx.font = `${actualFontSize}px Arial`;    
+    const lineHeight = actualFontSize * 1.2;
+    const lineWidths = lines.map(line => ctx.measureText(line).width);
+    const maxLineWidth = Math.max(...lineWidths);
     
-    ctx.font = `${fontSize}px Arial`;
-    const metrics = ctx.measureText(text);
+    const paddingX = actualFontSize * 0.5;
+    const paddingY = actualFontSize * 0.5;
     
-    const textHeight = fontSize;
-    
-    const paddingX = fontSize * 0.5;
-    const paddingY = fontSize * 0.5;
-    
-    const canvasWidth = metrics.width + paddingX * 2;
-    const canvasHeight = textHeight + paddingY * 2;
-    
-    const scale = 2; 
+    const canvasWidth = maxLineWidth + paddingX * 2;
+    const canvasHeight = lineHeight * lines.length + paddingY * 2;
+  
+    const scale = 2;
     canvas.width = canvasWidth * scale;
     canvas.height = canvasHeight * scale;
-    
     ctx.scale(scale, scale);
-    ctx.fillStyle = "rgba(0,0,0,0)"; 
+  
+    ctx.fillStyle = "rgba(0,0,0,0)";
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
-    ctx.font = `${fontSize}px Arial`;
+  
+    ctx.font = `${actualFontSize}px Arial`;
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    
-    ctx.fillText(text, canvasWidth/2, canvasHeight/2);
-    
+  
+    lines.forEach((line, i) => {
+      ctx.fillText(
+        line,
+        canvasWidth / 2,
+        paddingY + lineHeight * i + lineHeight / 2
+      );
+    });
+  
     const texture = new THREE.CanvasTexture(canvas);
+    
     texture.textWidth = canvasWidth;
     texture.textHeight = canvasHeight;
+    texture.fontSize = actualFontSize;
+    texture.lineCount = lines.length;
     
     return texture;
-  }
+  };
   const handlePlaneClick = (event, planeSide) => {
     setActivePlane(planeSide);
     if(isOpen && markerActive){
@@ -373,7 +385,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if(tempContextText) {
-      const textTexture = createTextTexture(tempContextText);
+      const textTexture = createTextTexture(tempContextText, fontSize);
 
       const newContext ={
         id: nextContextId,
@@ -382,6 +394,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         rotation: [0,0,0],
         textTexture,
         pageNumber: activePlane === "left" ? leftPage : rightPage,
+        fontSize: fontSize,
       };
 
       setPageContexts([...pageContexts, newContext]);
@@ -401,13 +414,19 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         <Plane ref={planeLeftRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e,"left"); }}>
           <meshStandardMaterial opacity={0} transparent/>
           {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map((contextItem) => { 
-            const fixedHeight = 0.5;
-            const fixedWidth = fixedHeight * (contextItem.textTexture.textWidth / contextItem.textTexture.textHeight);
-                      
+            const fontSize = contextItem.fontSize || 20;
+            const fontSizeFactor = fontSize * 3.5 / 50; 
+            
+            const aspect = contextItem.textTexture.textWidth / contextItem.textTexture.textHeight;
+            
+            const lineCount = contextItem.textTexture.lineCount || 1;
+            const dynamicHeight = (0.2 * fontSizeFactor) + (lineCount * 0.1 * fontSizeFactor);            
+            const decalHeight = Math.min(Math.max(dynamicHeight, 0.3), 2.0 * fontSizeFactor);
+            const decalWidth = decalHeight * aspect;
             return(
               <Decal
               key={contextItem.id}
-              scale={[fixedWidth, fixedHeight]}
+              scale={[decalWidth, decalHeight]}
               position={contextItem.position}
               rotation={contextItem.rotation}>
                 <meshStandardMaterial map={contextItem.textTexture} transparent/>
@@ -420,14 +439,20 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         </Plane>  
         <Plane ref={planeRightRef} args={[4.3,6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e, "right"); }}>
           <meshStandardMaterial opacity={0} transparent/>
-          {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map((contextItem) => { 
-            const fixedHeight = 0.5;
-            const fixedWidth = fixedHeight * (contextItem.textTexture.textWidth / contextItem.textTexture.textHeight);
-                      
+          {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map((contextItem) => {           
+            const fontSize = contextItem.fontSize || 20;
+            const fontSizeFactor = fontSize * 3.5 / 50; 
+            
+            const aspect = contextItem.textTexture.textWidth / contextItem.textTexture.textHeight;
+            
+            const lineCount = contextItem.textTexture.lineCount || 1;
+            const dynamicHeight = (0.2 * fontSizeFactor) + (lineCount * 0.1 * fontSizeFactor);            
+            const decalHeight = Math.min(Math.max(dynamicHeight, 0.3), 2.0 * fontSizeFactor);
+            const decalWidth = decalHeight * aspect;
             return(
               <Decal
               key={contextItem.id}
-              scale={[fixedWidth, fixedHeight]}
+              scale={[decalWidth, decalHeight]}
               position={contextItem.position}
               rotation={contextItem.rotation}>
                 <meshStandardMaterial map={contextItem.textTexture} transparent/>
@@ -442,15 +467,25 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>
             <div style={{background: "white", padding: "10px", borderRadius: "5px"}}>
               <form onSubmit={handleTextSubmit}>
-                <input
+                <textarea
                 type="text"
                 value={tempContextText}
                 onChange={(e) => {
                   setTempContextText(e.target.value);
                 }}
                 placeholder="Enter Text..."
-                style={{ width: "200px", padding: "5px"}}
+                style={{ width: "200px", padding: "5px", height: "100px"}}
+                maxLength={100}
                 autoFocus/>
+                <input type="number" value={fontSize} onChange={(e) => { 
+                  setFontSize(e.target.value);
+                }}
+                placeholder="Enter Font Size..."
+                defaultValue={20}
+                min={20}
+                max={80}
+
+                />
                 <button type="submit">Add</button>
                 <button type="button" onClick={() => setShowTextInput(false)}>Cancel</button>
               </form>
@@ -507,21 +542,20 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                   >
                     <RotateCw/>
                   </button>
-                  <button className="objectButton"
-                    onClick={(e) => {
+                  <button className="objectButton" disabled={!isOpen} onClick={(e) => {
                       e.stopPropagation();
                       focusOnCube();
                     }}
                   >
                     <PencilLine/>
                   </button>
-                  <button className="objectButton" onClick={(e) => {
+                  <button className="objectButton" disabled={!isOpen} onClick={(e) => {
                     e.stopPropagation();
                     handleNextPage();
                   }}>
                     <ArrowRight/>
                   </button>
-                  <button className="objectButton" onClick={(e) => {
+                  <button className="objectButton" disabled={!isOpen} onClick={(e) => {
                     e.stopPropagation();
                     handlePrevPage();
                     }}>
