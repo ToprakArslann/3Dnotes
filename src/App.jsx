@@ -95,6 +95,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [selectedContextId, setSelectedContextId] = useState(null);
   const [fontSize, setFontSize] = useState(20);
   const [textActive, setTextActive] = useState(false);
+  const [textColor, setTextColor] = useState("#000000");
   const toggleOpen = () => {
     if (animationCooldown) return; 
     setIsOpen(!isOpen);
@@ -399,7 +400,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if(textActive && tempContextText) {
-      const textTexture = createTextTexture(tempContextText, fontSize);
+      const textTexture = createTextTexture(tempContextText, fontSize, textColor);
 
       const newContext ={
         id: nextContextId,
@@ -409,6 +410,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         textTexture,
         pageNumber: activePlane === "left" ? leftPage : rightPage,
         fontSize: fontSize,
+        textColor: textColor,
       };
 
       setPageContexts([...pageContexts, newContext]);
@@ -588,7 +590,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           
           {markerActive && (
             <>
-              <Html position={[4, 0.3, -4]}>
+              <Html position={[4, 0.3, -4]} className="objectMenu">
                 <button className="objectButton"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -614,6 +616,11 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                 }}>
                   <TextCursor/>
                 </button>
+                <div className="textColorPicker">
+                  <input type="color" className="colorPicker" value={textColor} onChange={(e) => {
+                    setTextColor(e.target.value);
+                  }} />
+                </div>
               </Html>
             </>
           )}
