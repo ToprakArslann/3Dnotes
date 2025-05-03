@@ -1,11 +1,12 @@
 import { Canvas, context, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane,Text, Billboard} from "@react-three/drei";
+import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane,Text, Billboard, useCursor} from "@react-three/drei";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
 import "./App.css";
-import { ArrowLeft, ArrowRight, BookOpen, Hand, PencilLine, RotateCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Hand, PencilLine, RotateCw, TextCursor, X } from "lucide-react";
+import { color } from "three/tsl";
 
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
@@ -93,6 +94,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [tempContextText, setTempContextText] = useState("");
   const [selectedContextId, setSelectedContextId] = useState(null);
   const [fontSize, setFontSize] = useState(20);
+  const [textActive, setTextActive] = useState(false);
   const toggleOpen = () => {
     if (animationCooldown) return; 
     setIsOpen(!isOpen);
@@ -173,6 +175,18 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
   useEffect(() => {
+    if(!markerActive){
+      setTextActive(false);
+    }
+  }, [markerActive]);
+  useEffect(() => {
+    if (textActive) {
+      document.body.classList.add("text-cursor");
+    } else {
+      document.body.classList.remove("text-cursor");
+    }
+  }, [textActive]);
+  useEffect(() => {
     if (isOpen){
       const timeout = setTimeout(() => {
         setPageVisible(true);
@@ -203,8 +217,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     console.log("id vv",isSelected);
     console.log("aaaaaaa",markerActive);
     console.log("leftright",leftPage,rightPage);
-
-  }, [id, selectedId, isSelected, leftPage, rightPage]);
+    console.log("textActive",textActive);
+  }, [id, selectedId, isSelected, leftPage, rightPage, textActive]);
   useEffect(() => {
     const handleMouseDown = (event) => {
       if((!isDragging && !isRotating)|| !meshRef.current) return;
@@ -300,7 +314,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
-  const createTextTexture = (text, fontSize = 20) => {
+  const createTextTexture = (text, fontSize = 20, textColor = "black") => {
     const actualFontSize = fontSize;
     
     const lines = text.split('\n');
@@ -327,7 +341,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
   
     ctx.font = `${actualFontSize}px Arial`;
-    ctx.fillStyle = "black";
+    ctx.fillStyle = textColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
   
@@ -350,7 +364,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   };
   const handlePlaneClick = (event, planeSide) => {
     setActivePlane(planeSide);
-    if(isOpen && markerActive){
+    if(isOpen && markerActive && textActive){
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObject(planeSide === "left" ? planeLeftRef.current : planeRightRef.current);
 
@@ -384,7 +398,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   
   const handleTextSubmit = (e) => {
     e.preventDefault();
-    if(tempContextText) {
+    if(textActive && tempContextText) {
       const textTexture = createTextTexture(tempContextText, fontSize);
 
       const newContext ={
@@ -402,6 +416,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
 
       setTempContextText("");
       setShowTextInput(false);
+      setTextActive(false);
     }
   };
   
@@ -463,9 +478,9 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
             {rightPage}
           </Text>
         </Plane>  
-        {showTextInput && markerActive && (
+        { textActive && showTextInput && markerActive && (
           <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>
-            <div style={{background: "white", padding: "10px", borderRadius: "5px"}}>
+            <div style={{background: "white", padding: "10px", borderRadius: "5px"}} >
               <form onSubmit={handleTextSubmit}>
                 <textarea
                 type="text"
@@ -592,6 +607,12 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                   handlePrevPage();
                 }}>
                   <ArrowLeft/>
+                </button>
+                <button type="switch" className={`objectButton ${textActive ? "active" : ""}`}  onClick={(e) => {
+                  e.stopPropagation();
+                  setTextActive(!textActive);
+                }}>
+                  <TextCursor/>
                 </button>
               </Html>
             </>

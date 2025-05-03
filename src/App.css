@@ -300,3 +300,10 @@ input[type="range"]:disabled::-moz-range-thumb {
 .objectButton:active{
 	background-color: #393E46;
 }
+.objectButton.active{
+	background-color: #EEEEEE;
+	transition: 0.5s;
+}
+.text-cursor {
+	cursor: text;
+}
