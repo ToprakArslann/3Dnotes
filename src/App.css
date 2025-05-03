@@ -348,3 +348,13 @@ input[type="range"]:disabled::-moz-range-thumb {
 	border-radius: 50%;
 	border: 2px solid white;
 }
+.markerMenu{
+	display: flex;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, 50%);
+	flex-direction: row;
+	gap: 10px;
+}
+

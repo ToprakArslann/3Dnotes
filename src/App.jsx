@@ -1,11 +1,11 @@
 import { Canvas, context, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane,Text, Billboard, useCursor} from "@react-three/drei";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane,Text} from "@react-three/drei";
+import { useEffect, useRef, useState, useMemo} from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
 import "./App.css";
-import { ArrowLeft, ArrowRight, BookOpen, Hand, PencilLine, RotateCw, TextCursor, X } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, BookOpen, Hand, PencilLine, RotateCw, TextCursor, X } from "lucide-react";
 import { color } from "three/tsl";
 
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
@@ -96,6 +96,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [fontSize, setFontSize] = useState(20);
   const [textActive, setTextActive] = useState(false);
   const [textColor, setTextColor] = useState("#000000");
+  const [textAlign, setTextAlign] = useState("left");
   const toggleOpen = () => {
     if (animationCooldown) return; 
     setIsOpen(!isOpen);
@@ -178,6 +179,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   useEffect(() => {
     if(!markerActive){
       setTextActive(false);
+      setTextAlign("left");
+      setTextColor("#000000");
     }
   }, [markerActive]);
   useEffect(() => {
@@ -315,52 +318,30 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
-  const createTextTexture = (text, fontSize = 20, textColor = "black") => {
-    const actualFontSize = fontSize;
+  const createTextTexture = (text, fontSize, textColor) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 1024;
+    canvas.height = 512;
+    
+    context.fillStyle = "rgba(0, 0, 0, 0)";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    context.fillStyle = textColor;
+    context.font = `${fontSize}px Arial`;
+    context.textAlign = textAlign;
+    context.textBaseline = 'middle';
     
     const lines = text.split('\n');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-  
-    ctx.font = `${actualFontSize}px Arial`;    
-    const lineHeight = actualFontSize * 1.2;
-    const lineWidths = lines.map(line => ctx.measureText(line).width);
-    const maxLineWidth = Math.max(...lineWidths);
+    const lineHeight = fontSize * 1.2;
+    const startY = canvas.height / 2 - (lines.length - 1) * lineHeight / 2;
     
-    const paddingX = actualFontSize * 0.5;
-    const paddingY = actualFontSize * 0.5;
-    
-    const canvasWidth = maxLineWidth + paddingX * 2;
-    const canvasHeight = lineHeight * lines.length + paddingY * 2;
-  
-    const scale = 2;
-    canvas.width = canvasWidth * scale;
-    canvas.height = canvasHeight * scale;
-    ctx.scale(scale, scale);
-  
-    ctx.fillStyle = "rgba(0,0,0,0)";
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  
-    ctx.font = `${actualFontSize}px Arial`;
-    ctx.fillStyle = textColor;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-  
     lines.forEach((line, i) => {
-      ctx.fillText(
-        line,
-        canvasWidth / 2,
-        paddingY + lineHeight * i + lineHeight / 2
-      );
+      context.fillText(line, canvas.width / 2, startY + i * lineHeight);
     });
-  
-    const texture = new THREE.CanvasTexture(canvas);
     
-    texture.textWidth = canvasWidth;
-    texture.textHeight = canvasHeight;
-    texture.fontSize = actualFontSize;
-    texture.lineCount = lines.length;
-    
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
     return texture;
   };
   const handlePlaneClick = (event, planeSide) => {
@@ -401,16 +382,16 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     e.preventDefault();
     if(textActive && tempContextText) {
       const textTexture = createTextTexture(tempContextText, fontSize, textColor);
-
       const newContext ={
         id: nextContextId,
         context: tempContextText,
         position: [planeClickPosition.x, planeClickPosition.y, 0],
         rotation: [0,0,0],
-        textTexture,
         pageNumber: activePlane === "left" ? leftPage : rightPage,
         fontSize: fontSize,
         textColor: textColor,
+        textAlign: textAlign,
+        textTexture: textTexture,
       };
 
       setPageContexts([...pageContexts, newContext]);
@@ -421,34 +402,22 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       setTextActive(false);
     }
   };
-  
-
-
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
       <group ref={meshRef} position={position}>
         <Plane ref={planeLeftRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e,"left"); }}>
           <meshStandardMaterial opacity={0} transparent/>
-          {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map((contextItem) => { 
-            const fontSize = contextItem.fontSize || 20;
-            const fontSizeFactor = fontSize * 3.5 / 50; 
-            
-            const aspect = contextItem.textTexture.textWidth / contextItem.textTexture.textHeight;
-            
-            const lineCount = contextItem.textTexture.lineCount || 1;
-            const dynamicHeight = (0.2 * fontSizeFactor) + (lineCount * 0.1 * fontSizeFactor);            
-            const decalHeight = Math.min(Math.max(dynamicHeight, 0.3), 2.0 * fontSizeFactor);
-            const decalWidth = decalHeight * aspect;
+          {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map(contextItem => {
             return(
               <Decal
-              key={contextItem.id}
-              scale={[decalWidth, decalHeight]}
-              position={contextItem.position}
-              rotation={contextItem.rotation}>
+                key={contextItem.id}
+                scale={[10,10]}
+                position={contextItem.position}
+                rotation={contextItem.rotation}>
                 <meshStandardMaterial map={contextItem.textTexture} transparent/>
               </Decal>
-            );
+            )
           })}
           <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
             {leftPage}
@@ -456,26 +425,15 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         </Plane>  
         <Plane ref={planeRightRef} args={[4.3,6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e, "right"); }}>
           <meshStandardMaterial opacity={0} transparent/>
-          {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map((contextItem) => {           
-            const fontSize = contextItem.fontSize || 20;
-            const fontSizeFactor = fontSize * 3.5 / 50; 
-            
-            const aspect = contextItem.textTexture.textWidth / contextItem.textTexture.textHeight;
-            
-            const lineCount = contextItem.textTexture.lineCount || 1;
-            const dynamicHeight = (0.2 * fontSizeFactor) + (lineCount * 0.1 * fontSizeFactor);            
-            const decalHeight = Math.min(Math.max(dynamicHeight, 0.3), 2.0 * fontSizeFactor);
-            const decalWidth = decalHeight * aspect;
-            return(
-              <Decal
-              key={contextItem.id}
-              scale={[decalWidth, decalHeight]}
-              position={contextItem.position}
-              rotation={contextItem.rotation}>
-                <meshStandardMaterial map={contextItem.textTexture} transparent/>
-              </Decal>
-            );
-          })}
+          {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map(contextItem => (
+            <Decal
+            key={contextItem.id}
+            scale={[5,5]}
+            position={contextItem.position}
+            rotation={contextItem.rotation}>
+              <meshStandardMaterial map={contextItem.textTexture} transparent/>
+            </Decal>
+          ))}
           <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
             {rightPage}
           </Text>
@@ -491,8 +449,9 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                   setTempContextText(e.target.value);
                 }}
                 placeholder="Enter Text..."
-                style={{ width: "200px", padding: "5px", height: "100px"}}
+                style={{ width: "200px", padding: "5px", height: "100px", textAlign: textAlign}}
                 maxLength={100}
+                
                 autoFocus/>
                 <input type="number" value={fontSize} onChange={(e) => { 
                   setFontSize(e.target.value);
@@ -520,7 +479,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           />
           {isSelected && !anyMarkerActive && !onShowSettings && (
             <>
-              <Html position={[5,0.5,-5]}>
+              <Html position={[6,0,0]} transform rotation-x={-Math.PI/2} scale={0.9}>
                 <div className="objectMenu">
                   <button className="objectButton"
                   onMouseDown={(e) =>{
@@ -590,7 +549,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           
           {markerActive && (
             <>
-              <Html position={[4, 0.3, -4]} className="objectMenu">
+              <Html position={[5, 0, -4.5]} rotation-x={Math.PI/2 + 0.3} transform scale={0.6}>
                 <button className="objectButton"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -598,28 +557,58 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                   }}>
                     <X/>
                 </button>
-                <button className="objectButton" onClick={(e) => {
-                  e.stopPropagation();
-                  handleNextPage();
-                }}>
-                  <ArrowRight/>
-                </button>
-                <button className="objectButton" onClick={(e) => {
-                  e.stopPropagation();
-                  handlePrevPage();
-                }}>
-                  <ArrowLeft/>
-                </button>
-                <button type="switch" className={`objectButton ${textActive ? "active" : ""}`}  onClick={(e) => {
-                  e.stopPropagation();
-                  setTextActive(!textActive);
-                }}>
-                  <TextCursor/>
-                </button>
-                <div className="textColorPicker">
-                  <input type="color" className="colorPicker" value={textColor} onChange={(e) => {
-                    setTextColor(e.target.value);
-                  }} />
+              </Html>
+              <Html position={[0, 0, 5.2]} rotation-x={Math.PI/2 - 0.3} transform scale={0.6}>
+                <div className="markerMenu">
+                  <button className="objectButton" onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrevPage();
+                  }}>
+                    <ArrowLeft/>
+                  </button>
+                  <button className="objectButton" onClick={(e) => {
+                    e.stopPropagation();
+                    handleNextPage();
+                  }}>
+                    <ArrowRight/>
+                  </button>
+                </div>
+              </Html>
+              <Html position={[0, 0 , -3.5]} rotation-x={Math.PI/2 + 0.2} transform scale={0.6}>
+                <div className="markerMenu">
+                  <button className={`objectButton ${textActive ? "active" : ""}`}  onClick={(e) => {
+                    e.stopPropagation();
+                    setTextActive(!textActive);
+                  }}>
+                    <TextCursor/>
+                  </button>
+                  <div className="textColorPicker">
+                    <input type="color" className="colorPicker" value={textColor} onChange={(e) => {
+                      setTextColor(e.target.value);
+                    }} />
+                  </div>
+                </div>
+              </Html>
+              <Html position={[0, 1 , -4]} rotation-x={Math.PI/2 + 0.2} transform scale={0.4}>
+                <div className="markerMenu">
+                    <button className={`objectButton ${textAlign === "left" ? "active" : ""}`} onClick={(e) => {
+                      e.stopPropagation();
+                      setTextAlign("left");
+                    }}>
+                      <AlignLeft/>
+                    </button>
+                    <button className={`objectButton ${textAlign === "center" ? "active" : ""}`} onClick={(e) => {
+                      e.stopPropagation();
+                      setTextAlign("center");
+                    }}>
+                      <AlignCenter/>
+                    </button>
+                    <button className={`objectButton ${textAlign === "right" ? "active" : ""}`} onClick={(e) => {
+                      e.stopPropagation();
+                      setTextAlign("right");
+                    }}>
+                      <AlignRight/>
+                    </button>
                 </div>
               </Html>
             </>
@@ -673,7 +662,7 @@ const App = () => {
         <Environment preset="city"/>
         <InfiniteGrid size1={gridValue1} size2={gridValue2} color={0xffffff} distance={fogLevel} axes="xzy"/>
         {!anyMarkerActive &&
-          <GizmoHelper alignment="bottom-right" margin={[80,80]} >
+          <GizmoHelper alignment="bottom-right" margin={[80,80]}>
             <GizmoViewport axisColors={["red", "green", "blue"]} labelColor="black" />
           </GizmoHelper>
         }

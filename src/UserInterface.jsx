@@ -22,7 +22,7 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                     <h1 className="userInterface_settingsMenu_header">Settings</h1>
                     <div className="userInterface_settingsMenu_items">
                         <div className="item">
-                            <span className="settingsMenu_itemName">Background Color <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} /></span>
+                            <span className="settingsMenu_itemName">Background Color <input type="color" className="colorPicker" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} /></span>
 
                         </div>
                         <div className="item">
