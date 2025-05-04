@@ -5,7 +5,7 @@ import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
 import "./App.css";
-import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, BookOpen, Hand, PencilLine, RotateCw, TextCursor, X } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Bold, BookOpen, Hand, Italic, PencilLine, RemoveFormatting, RotateCw, TextCursor, X } from "lucide-react";
 import { color } from "three/tsl";
 
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
@@ -97,7 +97,29 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [textActive, setTextActive] = useState(false);
   const [textColor, setTextColor] = useState("#000000");
   const [textAlign, setTextAlign] = useState("left");
+  const [textStyle, setTextStyle] = useState("normal");
   const [planeSide, setPlaneSide] = useState(null);
+  const [fontFamily, setFontFamily] = useState('Arial');
+
+  const fontFamilies = [
+    'Arial',
+    'Courier New',
+    'Georgia',
+    'Times New Roman',
+    'Verdana',
+    'Comic Sans MS',
+    'Impact',
+    'Trebuchet MS',
+    'Lucida Console',
+    'Tahoma',
+    'Helvetica',
+    'Palatino Linotype',
+    'Garamond',
+    'Arial Black',
+    'Brush Script MT',
+    'Segoe UI',
+    'Poppins']
+
   const toggleOpen = () => {
     if (animationCooldown) return; 
     setIsOpen(!isOpen);
@@ -322,7 +344,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
-  const createTextTexture = (text, fontSize, textColor, textAlign = "left") => {
+  const createTextTexture = (text, fontSize, textColor, textAlign = "left", textStyle, fontFamily) => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.width = 1024;
@@ -331,7 +353,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     context.clearRect(0, 0, canvas.width, canvas.height);
     
     context.fillStyle = textColor;
-    context.font = `${fontSize}px Arial`;
+    context.font = `${textStyle} ${fontSize}px ${fontFamily}`;
     context.textAlign = textAlign;
     context.textBaseline = 'middle';
     
@@ -384,7 +406,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if(textActive && tempContextText) {
-      const textTexture = createTextTexture(tempContextText, fontSize, textColor, textAlign);
+      const textTexture = createTextTexture(tempContextText, fontSize, textColor, textAlign, textStyle, fontFamily);
       const newContext ={
         id: nextContextId,
         context: tempContextText,
@@ -394,6 +416,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         fontSize: fontSize,
         textColor: textColor,
         textAlign: textAlign,
+        textStyle: textStyle,
+        fontFamily: fontFamily,
         textTexture: textTexture,
       };
 
@@ -408,7 +432,9 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const TextPreview = ({planeSide ,text, fontSize, textColor, textAlign}) => {
     const [texture, setTexture] = useState(null);
     const [planePosition, setPlanePosition] = useState(new THREE.Vector3(0,0,0));
-    
+    const materialRef = useRef();
+    const [currentDecalPos, setCurrentDecalPos] = useState(new THREE.Vector3(0, 0, 0));
+    const [targetDecalPos, setTargetDecalPos] = useState(new THREE.Vector3(0, 0, 0));
     useEffect(() => {
       if (planeSide === "left" && planeLeftRef.current) {
         setPlanePosition(planeLeftRef.current.position);
@@ -416,10 +442,21 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         setPlanePosition(planeRightRef.current.position);
       }
     }, [planeSide]);
-
+    useEffect(() => {
+      setTargetDecalPos(new THREE.Vector3(planeClickPosition.x, planeClickPosition.y, 0));
+    }, [planeClickPosition]);
+    useFrame((state) => {
+      if(showTextInput && materialRef.current){
+        const time = state.clock.getElapsedTime();
+        materialRef.current.opacity = Math.sin(state.clock.getElapsedTime() * 2.5) * 0.2 + 0.8;
+      }
+      if(showTextInput){
+        setCurrentDecalPos(prevPos => prevPos.clone().lerp(targetDecalPos, 0.1));
+      }
+    })
     useEffect(() => {
       if(text){
-        const newTexture = createTextTexture(tempContextText, fontSize, textColor, textAlign);
+        const newTexture = createTextTexture(text, fontSize, textColor, textAlign, textStyle,fontFamily);
         setTexture(newTexture);
 
         return () => {
@@ -433,14 +470,13 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     return (
       <>
         {texture && (
-          <Plane args={[4.3, 6.6]} rotation={[-Math.PI / 2, 0, 0]} position={planePosition} visible={true}>
+          <Plane args={[4.3, 6.6]} rotation={[-Math.PI / 2, 0, 0]} position={planePosition}>
             <meshStandardMaterial opacity={0} transparent/>
             <Decal
-            position={[planeClickPosition.x, planeClickPosition.y, 0]}
-            scale={[10,10]}
-            rotation={[0, 0, 0]}>
-              <meshStandardMaterial map={texture} transparent opacity={0.9}/>
-
+              position={currentDecalPos}
+              scale={[10,10]}
+              rotation={[0, 0, 0]}>
+              <meshStandardMaterial ref={materialRef} map={texture} opacity={0.9} transparent/>
             </Decal>
           </Plane>
         )}
@@ -492,6 +528,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
               fontSize={fontSize}
               textColor={textColor}
               textAlign={textAlign}
+              visible={showTextInput && markerActive}
             />
             <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>            
               <div style={{background: "white", padding: "10px", borderRadius: "5px"}} >
@@ -604,7 +641,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           
           {markerActive && (
             <>
-              <Html position={[5, 0, -4.5]} rotation-x={Math.PI/2 + 0.3} transform scale={0.6}>
+              <Html position={[6, 0, -4.5]} rotation-x={Math.PI/2} rotation-y={.2} transform scale={0.6}>
                 <button className="objectButton"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -629,7 +666,42 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
                   </button>
                 </div>
               </Html>
-              <Html position={[0, 0 , -3.5]} rotation-x={Math.PI/2 + 0.2} transform scale={0.6}>
+              <Html position={[6.5, 0 , 0]} rotation-x={-Math.PI/2} rotation-y={-0.2} transform scale={0.6}>
+                <div className="markerMenuColumn">
+                  <select className="fontSelect" style={{fontFamily: fontFamily}} value={fontFamily} onChange={(e) => {
+                    setFontFamily(e.target.value);
+                  }}>
+                    {fontFamilies.map((font) => (
+                      <option key={font} value={font}>
+                        {font}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </Html>
+              <Html position={[-6, 0 , 0]} rotation-x={-Math.PI/2} rotation-y={0.2} transform scale={0.6}>
+                <div className="markerMenuColumn">
+                  <button className={`objectButton ${textStyle === "bold" ? "active" : ""}`}  onClick={(e) => {
+                    e.stopPropagation();
+                    setTextStyle("bold");
+                  }}>
+                    <Bold/>
+                  </button>
+                  <button className={`objectButton ${textStyle === "italic" ? "active" : ""}`}  onClick={(e) => {
+                    e.stopPropagation();
+                    setTextStyle("italic");
+                  }}>
+                    <Italic/>
+                  </button>
+                  <button className={`objectButton ${textStyle === "normal" ? "active" : ""}`}  onClick={(e) => {
+                    e.stopPropagation();
+                    setTextStyle("normal");
+                  }}>
+                    <RemoveFormatting/>
+                  </button>
+                </div>
+              </Html>
+              <Html position={[0, 0 , -5.5]} rotation-x={-Math.PI/2 + 0.2} transform scale={0.6}>
                 <div className="markerMenu">
                   <button className={`objectButton ${textActive ? "active" : ""}`}  onClick={(e) => {
                     e.stopPropagation();
