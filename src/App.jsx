@@ -97,6 +97,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [textActive, setTextActive] = useState(false);
   const [textColor, setTextColor] = useState("#000000");
   const [textAlign, setTextAlign] = useState("left");
+  const [planeSide, setPlaneSide] = useState(null);
   const toggleOpen = () => {
     if (animationCooldown) return; 
     setIsOpen(!isOpen);
@@ -182,7 +183,10 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       setTextAlign("left");
       setTextColor("#000000");
     }
-  }, [markerActive]);
+    if (!showTextInput){
+      setTempContextText("");
+    }
+  }, [markerActive, showTextInput]);
   useEffect(() => {
     if (textActive) {
       document.body.classList.add("text-cursor");
@@ -318,14 +322,13 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
-  const createTextTexture = (text, fontSize, textColor) => {
+  const createTextTexture = (text, fontSize, textColor, textAlign = "left") => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.width = 1024;
     canvas.height = 512;
     
-    context.fillStyle = "rgba(0, 0, 0, 0)";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(0, 0, canvas.width, canvas.height);
     
     context.fillStyle = textColor;
     context.font = `${fontSize}px Arial`;
@@ -381,7 +384,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if(textActive && tempContextText) {
-      const textTexture = createTextTexture(tempContextText, fontSize, textColor);
+      const textTexture = createTextTexture(tempContextText, fontSize, textColor, textAlign);
       const newContext ={
         id: nextContextId,
         context: tempContextText,
@@ -402,11 +405,54 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       setTextActive(false);
     }
   };
+  const TextPreview = ({planeSide ,text, fontSize, textColor, textAlign}) => {
+    const [texture, setTexture] = useState(null);
+    const [planePosition, setPlanePosition] = useState(new THREE.Vector3(0,0,0));
+    
+    useEffect(() => {
+      if (planeSide === "left" && planeLeftRef.current) {
+        setPlanePosition(planeLeftRef.current.position);
+      } else if (planeSide === "right" && planeRightRef.current) {
+        setPlanePosition(planeRightRef.current.position);
+      }
+    }, [planeSide]);
+
+    useEffect(() => {
+      if(text){
+        const newTexture = createTextTexture(tempContextText, fontSize, textColor, textAlign);
+        setTexture(newTexture);
+
+        return () => {
+          if (newTexture) {
+            newTexture.dispose();
+          }
+        }
+      }
+    }, [text, fontSize, textColor, textAlign]);
+
+    return (
+      <>
+        {texture && (
+          <Plane args={[4.3, 6.6]} rotation={[-Math.PI / 2, 0, 0]} position={planePosition} visible={true}>
+            <meshStandardMaterial opacity={0} transparent/>
+            <Decal
+            position={[planeClickPosition.x, planeClickPosition.y, 0]}
+            scale={[10,10]}
+            rotation={[0, 0, 0]}>
+              <meshStandardMaterial map={texture} transparent opacity={0.9}/>
+
+            </Decal>
+          </Plane>
+        )}
+      </>
+    )
+  };
+
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
       <group ref={meshRef} position={position}>
-        <Plane ref={planeLeftRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e,"left"); }}>
+        <Plane ref={planeLeftRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("left"); handlePlaneClick(e, "left"); }}>
           <meshStandardMaterial opacity={0} transparent/>
           {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map(contextItem => {
             return(
@@ -423,14 +469,14 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
             {leftPage}
           </Text>
         </Plane>  
-        <Plane ref={planeRightRef} args={[4.3,6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { handlePlaneClick(e, "right"); }}>
+        <Plane ref={planeRightRef} args={[4.3,6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("right"); handlePlaneClick(e, "right"); }}>
           <meshStandardMaterial opacity={0} transparent/>
           {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map(contextItem => (
             <Decal
-            key={contextItem.id}
-            scale={[5,5]}
-            position={contextItem.position}
-            rotation={contextItem.rotation}>
+              key={contextItem.id}
+              scale={[10,10]}
+              position={contextItem.position}
+              rotation={contextItem.rotation}>
               <meshStandardMaterial map={contextItem.textTexture} transparent/>
             </Decal>
           ))}
@@ -439,34 +485,43 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
           </Text>
         </Plane>  
         { textActive && showTextInput && markerActive && (
-          <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>
-            <div style={{background: "white", padding: "10px", borderRadius: "5px"}} >
-              <form onSubmit={handleTextSubmit}>
-                <textarea
-                type="text"
-                value={tempContextText}
-                onChange={(e) => {
-                  setTempContextText(e.target.value);
-                }}
-                placeholder="Enter Text..."
-                style={{ width: "200px", padding: "5px", height: "100px", textAlign: textAlign}}
-                maxLength={100}
-                
-                autoFocus/>
-                <input type="number" value={fontSize} onChange={(e) => { 
-                  setFontSize(e.target.value);
-                }}
-                placeholder="Enter Font Size..."
-                defaultValue={20}
-                min={20}
-                max={80}
+          <>
+            <TextPreview 
+              planeSide={planeSide}
+              text={tempContextText}
+              fontSize={fontSize}
+              textColor={textColor}
+              textAlign={textAlign}
+            />
+            <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>            
+              <div style={{background: "white", padding: "10px", borderRadius: "5px"}} >
+                <form onSubmit={handleTextSubmit}>
+                  <textarea
+                  type="text"
+                  value={tempContextText}
+                  onChange={(e) => {
+                    setTempContextText(e.target.value);
+                  }}
+                  placeholder="Enter Text..."
+                  style={{ width: "200px", padding: "5px", height: "100px", textAlign: textAlign}}
+                  maxLength={100}
+                  
+                  autoFocus/>
+                  <input type="number" value={fontSize} onChange={(e) => { 
+                    setFontSize(e.target.value);
+                  }}
+                  placeholder="Enter Font Size..."
+                  defaultValue={20}
+                  min={20}
+                  max={150}
 
-                />
-                <button type="submit">Add</button>
-                <button type="button" onClick={() => setShowTextInput(false)}>Cancel</button>
-              </form>
-            </div>
-          </Html>
+                  />
+                  <button type="submit">Add</button>
+                  <button type="button" onClick={() => setShowTextInput(false)}>Cancel</button>
+                </form>
+              </div>
+            </Html>
+          </>
         )} 
         <mesh 
         onClick={handleMeshClick}>
