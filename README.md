@@ -68,6 +68,5 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 ## 📝 Acknowledgements
 
-- 3D models created with [Blender]
+- 3D models created with Blender
 - Icons from [Lucide React](https://lucide.dev/)
-- Inspired by traditional notebook experiences# 3D Interactive Notebook
