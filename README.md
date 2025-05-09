@@ -9,6 +9,7 @@
 ## ✨ Features
 
 - **Interactive 3D Notebooks**: Open, close, and manipulate realistic 3D notebook models
+- **Sticky Notes**: Add colorful sticky notes to mark important pages
 - **Text Entry System**: Add and format text on notebook pages
 - **Page Navigation**: Flip through notebook pages seamlessly
 - **Object Manipulation**: Move and rotate notebooks in 3D space
@@ -16,7 +17,6 @@
 
 ## 🚀 Upcoming Features
 
-- **Sticky Notes**: Add colorful sticky notes to mark important pages
 - **Custom Papers**: Insert different paper types (lined, graph, blank)
 - **Drawing Tools**: Sketch and draw directly on notebook pages
 - **Media Support**: Embed images and other media
