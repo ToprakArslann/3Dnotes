@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useMemo} from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
+import StickyNote from "./StickyNote";
 import "./App.css";
 import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Bold, BookOpen, Hand, Italic, PencilLine, RemoveFormatting, RotateCw, TextCursor, X } from "lucide-react";
-import { color } from "three/tsl";
 
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
@@ -58,6 +58,60 @@ const NoteBook = ({ url, isOpen }) => {
       <primitive object={clonedScene}/>
     </group>
   )
+};
+
+const StickyNoteModel = ({ url, color = '#ffeb3b' }) => {
+  const { scene } = useGLTF(url);
+  const group = useRef();
+  const clonedScene = useRef(scene.clone(true));
+
+  useEffect(() => {
+    if (clonedScene.current) {
+      clonedScene.current.traverse((node) => {
+        if (node.isMesh && node.material) {
+          if (Array.isArray(node.material)) {
+            node.material.forEach((mat) => {
+              mat.color = new THREE.Color(color);
+              
+              if (mat.roughness !== undefined) mat.roughness = 1.0; // Tam mat yüzey
+              if (mat.metalness !== undefined) mat.metalness = 0.0; // Metal özelliği yok
+              if (mat.shininess !== undefined) mat.shininess = 0; // Eski materyal tipi için parlaklık sıfır
+              
+              if (mat.specular !== undefined) {
+                mat.specular = new THREE.Color(0x000000);
+              }
+              
+              mat.needsUpdate = true;
+            });
+          } 
+          else {
+            node.material.color = new THREE.Color(color);
+            
+            if (node.material.roughness !== undefined) node.material.roughness = 1.0;
+            if (node.material.metalness !== undefined) node.material.metalness = 0.0;
+            if (node.material.shininess !== undefined) node.material.shininess = 0;
+            
+            if (node.material.specular !== undefined) {
+              node.material.specular = new THREE.Color(0x000000);
+            }
+            
+            node.material.needsUpdate = true;
+          }
+        }
+      });
+    }
+  }, [color]);
+
+  return (
+    <group
+      ref={group}
+      position={[0,0,-0.11]}
+      scale={0.5}
+      rotation={[Math.PI/2,0,0]}
+    >
+      <primitive object={clonedScene.current}/>
+    </group>
+  );
 };
 const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected}) => {
   const meshRef = useRef();
@@ -149,7 +203,6 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
 
     controls.enabled = false;
     setMarkerActive(true);
-    setAnyMarkerActive(true);
   };
 
   const exitMarker = () => {
@@ -199,6 +252,13 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   function easeInOutCubic(x) {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
+
+  useEffect(() => {
+    if(markerActive){
+      setAnyMarkerActive(true);
+    }
+  }, [markerActive]);
+
   useEffect(() => {
     if(!markerActive){
       setTextActive(false);
@@ -242,13 +302,13 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   },[isDragging, onDraggingChange]);
 
   useEffect(() => {
-    console.log("id aa",id);
-    console.log("id ss",selectedId);
-    console.log("id vv",isSelected);
-    console.log("aaaaaaa",markerActive);
-    console.log("leftright",leftPage,rightPage);
-    console.log("textActive",textActive);
-  }, [id, selectedId, isSelected, leftPage, rightPage, textActive]);
+    console.log("selected: ",selectedId);
+    console.log("isSelected: ",isSelected);
+    console.log("isMarkerActive: ",markerActive);
+    console.log("L/R: ",leftPage,rightPage);
+    console.log("textActive: ",textActive);
+    console.log("posiiton",position);
+  }, [id, selectedId, isSelected, leftPage, rightPage, textActive, position]);
   useEffect(() => {
     const handleMouseDown = (event) => {
       if((!isDragging && !isRotating)|| !meshRef.current) return;
@@ -333,10 +393,10 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     if( anyMarkerActive || isAnimating.current) {
       return;
     }
-    if(isSelected){
-      setSelectedId(null);
+    if(isSelected) {
+      setSelectedId({type: null, id: null});
     } else {
-      setSelectedId(id);
+      setSelectedId({type: "book", id: id});
     }
   }
   useEffect(() => {
@@ -745,8 +805,6 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     </>
   )
 }
-
-
 const App = () => {
   const [isRotating, setIsRotating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -756,10 +814,25 @@ const App = () => {
   const [ gridValue1, setGridValue1 ] = useState(2);
   const [ gridValue2, setGridValue2 ] = useState(6);
   const [ backgroundColor, setBackgroundColor ] = useState("#3057E1");
+  const [selected, setSelected] = useState({type: null, id: null});
   const [books, setBooks] = useState([]);
-  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [stickyNotes, setStickyNotes] = useState([]);
   const [nextBookId, setNextBookId] = useState(1); 
+  const [nextStickyId, setNextStickyId] = useState(1);
   
+  const createNSticky = () => {
+    const randomX = Math.floor(Math.random() * 20) - 10;
+    const randomZ = Math.floor(Math.random() * 20) - 10;
+    
+    const newSticky = {
+      id: nextStickyId,
+      position: [randomX,2.5,randomZ]
+    }
+    
+    setStickyNotes(prevStickyNotes => [...prevStickyNotes, newSticky]);
+    setNextStickyId(prevId => prevId + 1);
+  }
+
   const createNBook = () => {
     const randomX = Math.floor(Math.random() * 20) - 10;
     const randomZ = Math.floor(Math.random() * 20) - 10;
@@ -801,13 +874,31 @@ const App = () => {
             onDraggingChange={handleDraggingChange}
             onRotatingChange={handleRotatingChange} 
             onShowSettings={showSettings}
-            selectedId={selectedBookId}
-            setSelectedId={setSelectedBookId}
+            selectedId={selected}
+            setSelectedId={setSelected}
             anyMarkerActive={anyMarkerActive}
             setAnyMarkerActive={setAnyMarkerActive}
-            isSelected={selectedBookId === book.id}
+            isSelected={selected && selected.type === "book" && selected.id === book.id}
           />
         ))}
+
+        {stickyNotes.map(sticky => {
+          return(
+            <StickyNote 
+              key={sticky.id}
+              id={sticky.id}
+              position={sticky.position}
+              onDraggingChange={handleDraggingChange}
+              onRotatingChange={handleRotatingChange}
+              onShowSettings={showSettings}
+              anyMarkerActive={anyMarkerActive}
+              setAnyMarkerActive={setAnyMarkerActive}
+              selectedId={selected}
+              setSelectedId={setSelected}
+              isSelected={selected && selected.type === "sticky" && selected.id === sticky.id}
+              Model={StickyNoteModel}/>
+          )
+          })}
       </Canvas>
       <UserInterface 
         showSettings={showSettings}
@@ -821,6 +912,7 @@ const App = () => {
         gridValue2={gridValue2}
         setGridValue2={setGridValue2}
         createBook={createNBook}
+        createSticky={createNSticky}
         anyMarkerActive={anyMarkerActive}
       />
     </div>
@@ -828,4 +920,5 @@ const App = () => {
   )
 }
 useGLTF.preload("/3Dnotes/NoteBookSSS.glb");
+useGLTF.preload("/3Dnotes/StickyNote.glb");
 export default App;

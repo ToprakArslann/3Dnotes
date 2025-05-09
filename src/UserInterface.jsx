@@ -2,7 +2,7 @@ import { Settings, BookOpen, StickyNote, Star, MoveUpRight, Fullscreen, BookOpen
 import { useState } from "react";
 import { Html } from "@react-three/drei";
 
-const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColor, setBackgroundColor, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, anyMarkerActive}) => {
+const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColor, setBackgroundColor, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, createSticky, anyMarkerActive}) => {
     return (
         <>
         {!anyMarkerActive &&
@@ -12,7 +12,7 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                 </button>
                 <div className="userInterface_inventory">
                     <button className="userInterface_inventory_item" onClick={createBook}><BookOpenText/></button>
-                    <button className="userInterface_inventory_item"><StickyNote/></button>
+                    <button className="userInterface_inventory_item" onClick={createSticky}><StickyNote/></button>
                     <button className="userInterface_inventory_item"><Star/></button>
                     <button className="userInterface_inventory_item"><MoveUpRight/></button>
                 </div>
