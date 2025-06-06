@@ -13,8 +13,6 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                 <div className="userInterface_inventory">
                     <button className="userInterface_inventory_item" onClick={createBook}><BookOpenText/></button>
                     <button className="userInterface_inventory_item" onClick={createSticky}><StickyNote/></button>
-                    <button className="userInterface_inventory_item"><Star/></button>
-                    <button className="userInterface_inventory_item"><MoveUpRight/></button>
                 </div>
                 <p className="footerText">Made with ❤️ by <a style={{color: "Red"}} href="https://www.github.com/ToprakArslann">Toprak Arslan</a></p>
                 {showSettings && 
