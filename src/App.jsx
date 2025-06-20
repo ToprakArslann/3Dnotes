@@ -113,7 +113,7 @@ const StickyNoteModel = ({ url, color = '#ffeb3b' }) => {
     </group>
   );
 };
-const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate}) => {
+const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate, onRotationUpdate}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
@@ -362,7 +362,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
     };
 
     const handleMouseUp = () =>{
-      if(isDragging && onPositionUpdate) {
+      if(isDragging || isRotating && onPositionUpdate) {
+        onRotationUpdate(id,{x:0,y:targetRotationY.current,z:0});
         onPositionUpdate(id,targetMeshPosition.current);
       }
 
@@ -831,7 +832,8 @@ const App = () => {
     
     const newSticky = {
       id: nextStickyId,
-      position: [randomX,2.5,randomZ]
+      position: [randomX,2.5,randomZ],
+      rotation: [0,0,0]
     }
     
     setStickyNotes(prevStickyNotes => [...prevStickyNotes, newSticky]);
@@ -844,7 +846,8 @@ const App = () => {
     
     const newBook = {
       id: nextBookId,
-      position: [randomX,2,randomZ]
+      position: [randomX,2,randomZ],
+      rotation: [0,0,0]
     }
     
     setBooks([...books, newBook]);
@@ -858,6 +861,15 @@ const App = () => {
       )
     )
   }
+
+  const updateBookRotation = (bookId, newRotation) => {
+    setBooks(prevBooks =>
+      prevBooks.map(book => 
+        book.id === bookId ? { ...book, rotation: [0,newRotation.y,0] } : book
+      )
+    )
+  }
+
   const updateStickyPosition = (stickyId, newPosition) => {
     setStickyNotes(prevSticky => 
       prevSticky.map(sticky => 
@@ -866,9 +878,18 @@ const App = () => {
     )
   }
 
-  const handleRotatingChange = (rotating) => {
+  const updateStickyRotation = (stickyId, newRotation) => {
+    setStickyNotes(prevSticky => 
+      prevSticky.map(sticky => 
+        sticky.id === stickyId ? { ...sticky, rotation: [0,newRotation.y,0] } : sticky
+      )
+    )
+  }
 
+  const handleRotatingChange = (rotating) => {
     setIsRotating(rotating);
+    console.log("books", books)
+    console.log("sticky", stickyNotes)
   };
   const handleDraggingChange = (dragging) => {
     setIsDragging(dragging);
@@ -901,6 +922,7 @@ const App = () => {
             setAnyMarkerActive={setAnyMarkerActive}
             isSelected={selected && selected.type === "book" && selected.id === book.id}
             onPositionUpdate={updateBookPosition}
+            onRotationUpdate={updateBookRotation}
           />
         ))}
 
@@ -920,6 +942,7 @@ const App = () => {
               isSelected={selected && selected.type === "sticky" && selected.id === sticky.id}
               Model={StickyNoteModel}
               onPositionUpdate={updateStickyPosition}
+              onRotationUpdate={updateStickyRotation}
               />
           )
           })}
