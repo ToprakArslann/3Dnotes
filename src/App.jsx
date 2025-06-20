@@ -1,6 +1,6 @@
 import { Canvas, context, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, GizmoHelper, GizmoViewport, useGLTF, Environment, useAnimations, Decal,Plane,Text} from "@react-three/drei";
-import { useEffect, useRef, useState, useMemo} from "react";
+import { useEffect, useRef, useState, useMemo, forwardRef, useImperativeHandle} from "react";
 import { InfiniteGridHelper } from "./InfiniteGridHelper";
 import * as THREE from "three";
 import UserInterface from "./UserInterface";
@@ -113,7 +113,34 @@ const StickyNoteModel = ({ url, color = '#ffeb3b' }) => {
     </group>
   );
 };
-const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate, onRotationUpdate}) => {
+
+const createTextTexture = (text, fontSize, textColor, textAlign = "left", textStyle, fontFamily) => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  canvas.width = 1024;
+  canvas.height = 512;
+  
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  
+  context.fillStyle = textColor;
+  context.font = `${textStyle} ${fontSize}px ${fontFamily}`;
+  context.textAlign = textAlign;
+  context.textBaseline = 'middle';
+  
+  const lines = text.split('\n');
+  const lineHeight = fontSize * 1.2;
+  const startY = canvas.height / 2 - (lines.length - 1) * lineHeight / 2;
+  
+  lines.forEach((line, i) => {
+    context.fillText(line, canvas.width / 2, startY + i * lineHeight);
+  });
+  
+  const texture = new THREE.Texture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+};
+
+const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate, onRotationUpdate, pageContexts, setPageContexts}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
@@ -142,7 +169,6 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [activePlane, setActivePlane] = useState(null);
   const [leftPage, setLeftPage] = useState(1);
   const [rightPage, setRightPage] = useState(2);
-  const [pageContexts, setPageContexts] = useState([]);
   const [nextContextId, setNextContextId] = useState(1);
   const [showTextInput, setShowTextInput] = useState(false);
   const [tempContextText, setTempContextText] = useState("");
@@ -154,6 +180,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   const [textStyle, setTextStyle] = useState("normal");
   const [planeSide, setPlaneSide] = useState(null);
   const [fontFamily, setFontFamily] = useState('Arial');
+
 
   const fontFamilies = [
     'Arial',
@@ -410,31 +437,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       targetRotationY.current = meshRef.current.rotation.y;
     }
   }, []);
-  const createTextTexture = (text, fontSize, textColor, textAlign = "left", textStyle, fontFamily) => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.width = 1024;
-    canvas.height = 512;
-    
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    
-    context.fillStyle = textColor;
-    context.font = `${textStyle} ${fontSize}px ${fontFamily}`;
-    context.textAlign = textAlign;
-    context.textBaseline = 'middle';
-    
-    const lines = text.split('\n');
-    const lineHeight = fontSize * 1.2;
-    const startY = canvas.height / 2 - (lines.length - 1) * lineHeight / 2;
-    
-    lines.forEach((line, i) => {
-      context.fillText(line, canvas.width / 2, startY + i * lineHeight);
-    });
-    
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-  };
+
   const handlePlaneClick = (event, planeSide) => {
     setActivePlane(planeSide);
     if(isOpen && markerActive && textActive){
@@ -487,8 +490,8 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         textTexture: textTexture,
       };
 
-      setPageContexts([...pageContexts, newContext]);
-      setNextContextId(nextContextId+1);
+      setPageContexts(id, newContext);
+      setNextContextId(prevId => prevId+1);
 
       setTempContextText("");
       setShowTextInput(false);
@@ -823,7 +826,7 @@ const App = () => {
   const [selected, setSelected] = useState({type: null, id: null});
   const [books, setBooks] = useState([]);
   const [stickyNotes, setStickyNotes] = useState([]);
-  const [nextBookId, setNextBookId] = useState(1); 
+  const [nextBookId, setNextBookId] = useState(1);
   const [nextStickyId, setNextStickyId] = useState(1);
   
   const createNSticky = () => {
@@ -847,12 +850,21 @@ const App = () => {
     const newBook = {
       id: nextBookId,
       position: [randomX,2,randomZ],
-      rotation: [0,0,0]
+      rotation: [0,0,0],
+      pageContexts: []
     }
     
     setBooks([...books, newBook]);
-    setNextBookId(nextBookId + 1);
+    setNextBookId(prevId => prevId + 1);
   }
+
+  const addContextToBook = (bookId, newContext) => {
+    setBooks(prevBooks =>
+      prevBooks.map(book =>
+        book.id === bookId ? { ...book, pageContexts: [...book.pageContexts, newContext] } : book
+      )
+    );
+  };
 
   const updateBookPosition = (bookId, newPosition) => {
     setBooks(prevBooks => 
@@ -889,7 +901,6 @@ const App = () => {
   const handleRotatingChange = (rotating) => {
     setIsRotating(rotating);
     console.log("books", books)
-    console.log("sticky", stickyNotes)
   };
   const handleDraggingChange = (dragging) => {
     setIsDragging(dragging);
@@ -913,6 +924,8 @@ const App = () => {
             key={book.id}
             id={book.id}
             position={book.position}
+            pageContexts={book.pageContexts}
+            setPageContexts={addContextToBook}
             onDraggingChange={handleDraggingChange}
             onRotatingChange={handleRotatingChange} 
             onShowSettings={showSettings}
