@@ -113,7 +113,7 @@ const StickyNoteModel = ({ url, color = '#ffeb3b' }) => {
     </group>
   );
 };
-const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected}) => {
+const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
@@ -302,12 +302,12 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   },[isDragging, onDraggingChange]);
 
   useEffect(() => {
-    console.log("selected: ",selectedId);
-    console.log("isSelected: ",isSelected);
-    console.log("isMarkerActive: ",markerActive);
-    console.log("L/R: ",leftPage,rightPage);
-    console.log("textActive: ",textActive);
-    console.log("posiiton",position);
+    // console.log("selected: ",selectedId);
+    // console.log("isSelected: ",isSelected);
+    // console.log("isMarkerActive: ",markerActive);
+    // console.log("L/R: ",leftPage,rightPage);
+    // console.log("textActive: ",textActive);
+    // console.log("posiiton",position);
   }, [id, selectedId, isSelected, leftPage, rightPage, textActive, position]);
   useEffect(() => {
     const handleMouseDown = (event) => {
@@ -361,8 +361,13 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       }
     };
 
-    const handleMouseUp = () =>{ 
-      setIsDragging(false);      setIsRotating(false);
+    const handleMouseUp = () =>{
+      if(isDragging && onPositionUpdate) {
+        onPositionUpdate(id,targetMeshPosition.current);
+      }
+
+      setIsDragging(false);      
+      setIsRotating(false);
       if(controls) controls.enabled = true;
     };
 
@@ -384,7 +389,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isRotating, camera,gl, controls, plane]);
+  }, [isDragging, isRotating, camera,gl, controls, plane, id, onPositionUpdate]);
 
   const handleMeshClick = (e) => {
     e.stopPropagation();
@@ -845,6 +850,22 @@ const App = () => {
     setBooks([...books, newBook]);
     setNextBookId(nextBookId + 1);
   }
+
+  const updateBookPosition = (bookId, newPosition) => {
+    setBooks(prevBooks => 
+      prevBooks.map(book => 
+        book.id === bookId ? { ...book, position: [newPosition.x,newPosition.y,newPosition.z] } : book
+      )
+    )
+  }
+  const updateStickyPosition = (stickyId, newPosition) => {
+    setStickyNotes(prevSticky => 
+      prevSticky.map(sticky => 
+        sticky.id === stickyId ? { ...sticky, position: [newPosition.x,newPosition.y,newPosition.z] } : sticky
+      )
+    )
+  }
+
   const handleRotatingChange = (rotating) => {
 
     setIsRotating(rotating);
@@ -879,6 +900,7 @@ const App = () => {
             anyMarkerActive={anyMarkerActive}
             setAnyMarkerActive={setAnyMarkerActive}
             isSelected={selected && selected.type === "book" && selected.id === book.id}
+            onPositionUpdate={updateBookPosition}
           />
         ))}
 
@@ -896,7 +918,9 @@ const App = () => {
               selectedId={selected}
               setSelectedId={setSelected}
               isSelected={selected && selected.type === "sticky" && selected.id === sticky.id}
-              Model={StickyNoteModel}/>
+              Model={StickyNoteModel}
+              onPositionUpdate={updateStickyPosition}
+              />
           )
           })}
       </Canvas>

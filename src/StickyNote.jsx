@@ -16,7 +16,8 @@ const StickyNote = ({
   anyMarkerActive,
   setAnyMarkerActive,
   isSelected,
-  Model
+  Model,
+  onPositionUpdate
 }) => {
   const meshRef = useRef();
   const controlsRef = useRef();
@@ -166,6 +167,10 @@ const StickyNote = ({
     };
 
     const handleMouseUp = () => { 
+      if(isDragging && onPositionUpdate) {
+        onPositionUpdate(id,targetMeshPosition.current);
+      }
+      
       setIsDragging(false);
       setIsRotating(false);
       if (controls) controls.enabled = true;
