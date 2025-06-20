@@ -829,6 +829,117 @@ const App = () => {
   const [nextBookId, setNextBookId] = useState(1);
   const [nextStickyId, setNextStickyId] = useState(1);
   
+  const exportScene = () => {
+    const sceneData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      books: books.map(book => {
+        return {
+        id: book.id,
+        position: book.position,
+        rotation: book.rotation,
+        pageContexts: book.pageContexts.map(context => ({
+          id: context.id,
+          context: context.context,
+          position: context.position,
+          rotation: context.rotation,
+          pageNumber: context.pageNumber,
+          fontSize: context.fontSize,
+          textColor: context.textColor,
+          textAlign: context.textAlign,
+          textStyle: context.textStyle,
+          fontFamily: context.fontFamily
+        }))
+      }}),
+      stickyNotes: stickyNotes.map(sticky => ({
+        id: sticky.id,
+        position: sticky.position,
+        rotation: sticky.rotation
+      })),
+      nextIds: {
+        nextBookId,
+        nextStickyId
+      }
+    };
+
+    const dataStr = JSON.stringify(sceneData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `3d-notes-scene-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importScene = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const sceneData = JSON.parse(e.target.result);
+        
+        if (!sceneData.version) {
+          alert("Invalid Scene File!");
+          return;
+        }
+
+        if (sceneData.books) {
+          const loadedBooks = sceneData.books.map(bookData => ({
+            ...bookData,
+            pageContexts: bookData.pageContexts.map(context => ({
+              ...context,
+              textTexture: createTextTexture(
+                context.context,
+                context.fontSize,
+                context.textColor,
+                context.textAlign,
+                context.textStyle,
+                context.fontFamily
+              )
+            }))
+          }));
+          setBooks(loadedBooks);
+        }
+
+        if (sceneData.stickyNotes) {
+          setStickyNotes(sceneData.stickyNotes);
+        }
+
+        if (sceneData.nextIds) {
+          setNextBookId(sceneData.nextIds.nextBookId || 1);
+          setNextStickyId(sceneData.nextIds.nextStickyId || 1);
+        }
+
+        setSelected({type: null, id: null});
+        
+        alert("Scene Succesfully Loaded!");
+      } catch (error) {
+        console.error("Scene Loading Error:", error);
+        alert("An Error Occurred While Loading Scene!");
+      }
+    };
+    
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+  const clearScene = () => {
+    console.log("aaa")
+    if (window.confirm("Are u sure to clean whole scene?")) {
+      setBooks([]);
+      setStickyNotes([]);
+      setNextBookId(1);
+      setNextStickyId(1);
+      setSelected({type: null, id: null});
+    }
+  };
+
   const createNSticky = () => {
     const randomX = Math.floor(Math.random() * 20) - 10;
     const randomZ = Math.floor(Math.random() * 20) - 10;
@@ -974,6 +1085,9 @@ const App = () => {
         createBook={createNBook}
         createSticky={createNSticky}
         anyMarkerActive={anyMarkerActive}
+        exportScene={exportScene}
+        importScene={importScene}
+        clearSScene={clearScene}
       />
     </div>
 
