@@ -8,6 +8,7 @@ import "./App.css";
 const StickyNote = ({
   id,
   position,
+  rotation,
   onDraggingChange,
   onRotatingChange,
   onShowSettings,
@@ -320,7 +321,7 @@ const StickyNote = ({
   return (
     <>
       <OrbitControls ref={controlsRef} enabled={false} />
-      <group ref={meshRef} position={position}>
+      <group ref={meshRef} position={position} rotation={rotation}>
         <mesh
           ref={planeRef}
           onClick={handlePlaneClick}

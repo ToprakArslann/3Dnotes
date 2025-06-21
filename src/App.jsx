@@ -140,7 +140,7 @@ const createTextTexture = (text, fontSize, textColor, textAlign = "left", textSt
   return texture;
 };
 
-const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate, onRotationUpdate, pageContexts, setPageContexts}) => {
+const CubeR = ({id,position,rotation,onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive,setAnyMarkerActive,isSelected, onPositionUpdate, onRotationUpdate, pageContexts, setPageContexts}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
@@ -556,7 +556,7 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
   return(
     <>
       <OrbitControls ref={controlsRef} enabled={false}/>
-      <group ref={meshRef} position={position}>
+      <group ref={meshRef} position={position} rotation={rotation}>
         <Plane ref={planeLeftRef} args={[4.3,6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI/2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("left"); handlePlaneClick(e, "left"); }}>
           <meshStandardMaterial opacity={0} transparent/>
           {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map(contextItem => {
@@ -632,12 +632,6 @@ const CubeR = ({id,position,onDraggingChange, onRotatingChange, onShowSettings, 
         <mesh 
         onClick={handleMeshClick}>
           <NoteBook url="/3Dnotes/NoteBookSSS.glb" isOpen={isOpen}/>
-          <arrowHelper
-            ref={arrowRef}
-            position={[0, 0.25, 2.5]}
-            color={0xff0000}
-            visible={true}
-          />
           {isSelected && !anyMarkerActive && !onShowSettings && (
             <>
               <Html position={[6,0,0]} transform rotation-x={-Math.PI/2} scale={0.9}>
@@ -1050,6 +1044,7 @@ const App = () => {
             key={book.id}
             id={book.id}
             position={book.position}
+            rotation={book.rotation}
             pageContexts={book.pageContexts}
             setPageContexts={addContextToBook}
             onDraggingChange={handleDraggingChange}
@@ -1071,6 +1066,7 @@ const App = () => {
               key={sticky.id}
               id={sticky.id}
               position={sticky.position}
+              rotation={sticky.rotation}
               onDraggingChange={handleDraggingChange}
               onRotatingChange={handleRotatingChange}
               onShowSettings={showSettings}
