@@ -18,7 +18,9 @@ const StickyNote = ({
   isSelected,
   Model,
   onPositionUpdate,
-  onRotationUpdate
+  onRotationUpdate,
+  stickyContents = [],
+  addContextToSticky
 }) => {
   const meshRef = useRef();
   const controlsRef = useRef();
@@ -297,6 +299,11 @@ const StickyNote = ({
   
   const exitMarker = () => {
     if (isAnimating.current) return;
+    const newContext ={
+      id: Date.now(),
+      text: text
+    }
+    addContextToSticky(id, newContext);
     setMarkerActive(false);
     setAnyMarkerActive(false);
     setSelectedId(null);
@@ -334,6 +341,22 @@ const StickyNote = ({
           >
             {getDisplayText()}
           </Text>
+          {stickyContents && stickyContents.map(ctx => (
+            <Text
+            key={ctx.id}
+            position={[0, 0, 0.01]}
+            rotation={[0, 0, 0]}
+            fontSize={0.3}
+            maxWidth={6}
+            lineHeight={1.2}
+            color="#000000"
+            anchorX="center"
+            anchorY="middle"
+            textAlign="center"
+            >
+              {ctx.text}
+            </Text>
+          ))}
         </mesh>
 
         {markerActive && (

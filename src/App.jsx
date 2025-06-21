@@ -854,7 +854,8 @@ const App = () => {
       stickyNotes: stickyNotes.map(sticky => ({
         id: sticky.id,
         position: sticky.position,
-        rotation: sticky.rotation
+        rotation: sticky.rotation,
+        stickyContents: sticky.stickyContents
       })),
       nextIds: {
         nextBookId,
@@ -908,7 +909,12 @@ const App = () => {
         }
 
         if (sceneData.stickyNotes) {
-          setStickyNotes(sceneData.stickyNotes);
+          const loadedStickys = sceneData.stickyNotes.map(stickyData => ({
+            ...stickyData,
+            stickyContents: stickyData.stickyContents || []
+          }))
+
+          setStickyNotes(loadedStickys);
         }
 
         if (sceneData.nextIds) {
@@ -947,7 +953,8 @@ const App = () => {
     const newSticky = {
       id: nextStickyId,
       position: [randomX,2.5,randomZ],
-      rotation: [0,0,0]
+      rotation: [0,0,0],
+      stickyContents: []
     }
     
     setStickyNotes(prevStickyNotes => [...prevStickyNotes, newSticky]);
@@ -973,6 +980,14 @@ const App = () => {
     setBooks(prevBooks =>
       prevBooks.map(book =>
         book.id === bookId ? { ...book, pageContexts: [...book.pageContexts, newContext] } : book
+      )
+    );
+  };
+
+  const addContextToSticky = (stickyId, newContext) => {
+    setStickyNotes(prevSticky =>
+      prevSticky.map(sticky =>
+        sticky.id === stickyId ? { ...sticky, stickyContents: [...(sticky.stickyContents || []), newContext] } : sticky
       )
     );
   };
@@ -1067,6 +1082,8 @@ const App = () => {
               Model={StickyNoteModel}
               onPositionUpdate={updateStickyPosition}
               onRotationUpdate={updateStickyRotation}
+              stickyContents={sticky.stickyContents}
+              addContextToSticky={addContextToSticky}
               />
           )
           })}
