@@ -15,31 +15,35 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
         <>
             {!anyMarkerActive &&
                 <div className="userInterface">
-                    <div className="topLeft">
-                        <button className="topLeftButton" onClick={exportScene}>
-                            <FileUp/> Export
-                        </button>
-                        <button className="topLeftButton" onClick={handleImportClick}>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".json"
-                                onChange={importScene}
-                                style={{ display: 'none' }}
-                            />
-                            <FileDown/> Import
-                        </button>
-                        <button className="topLeftButton" onClick={clearSScene}>
-                            <RefreshCcw/> Clear
-                        </button>
-                    </div>
                     <button className="userInterface_settings_button" onClick={() => { setShowSettings(!showSettings) }}>
                         <Settings /> Settings
                     </button>
-                    <div className="userInterface_inventory">
-                        <button className="userInterface_inventory_item" onClick={createBook}><BookOpenText /></button>
-                        <button className="userInterface_inventory_item" onClick={createSticky}><StickyNote /></button>
-                    </div>
+                    {!showSettings &&
+                        <>
+                            <div className="userInterface_inventory">
+                                <button className="userInterface_inventory_item" onClick={createBook}><BookOpenText /></button>
+                                <button className="userInterface_inventory_item" onClick={createSticky}><StickyNote /></button>
+                            </div>
+                            <div className="topLeft">
+                                <button className="topLeftButton" onClick={exportScene}>
+                                    <FileUp/> Export
+                                </button>
+                                <button className="topLeftButton" onClick={handleImportClick}>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".json"
+                                        onChange={importScene}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <FileDown/> Import
+                                </button>
+                                <button className="topLeftButton" onClick={clearSScene}>
+                                    <RefreshCcw/> Clear
+                                </button>
+                            </div>
+                        </>
+                    }
                     <p className="footerText">Made with ❤️ by <a style={{ color: "Red" }} href="https://www.github.com/ToprakArslann">Toprak Arslan</a></p>
                     {showSettings &&
                         <div className="userInterface_settingsMenu">
@@ -47,7 +51,6 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                             <div className="userInterface_settingsMenu_items">
                                 <div className="item">
                                     <span className="settingsMenu_itemName">Background Color <input type="color" className="colorPicker" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} /></span>
-
                                 </div>
                                 <div className="item">
                                     <span className="settingsMenu_itemName">

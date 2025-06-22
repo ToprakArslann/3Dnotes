@@ -7,6 +7,12 @@ import UserInterface from "./UserInterface";
 import StickyNote from "./StickyNote";
 import "./App.css";
 import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Bold, BookOpen, Hand, Italic, PencilLine, RemoveFormatting, RotateCw, TextCursor, X } from "lucide-react";
+import Header from "./Components/Header";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import Hero from "./Components/Hero";
+import Features from "./Components/Features";
+import { color } from "three/tsl";
+import About from "./Components/About";
 
 const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 8000, axes = 'xzy' }) => {
   const gridColor = color instanceof THREE.Color ? color : new THREE.Color(color);
@@ -18,7 +24,7 @@ const InfiniteGrid = ({ size1 = 10, size2 = 100, color = 0x444444, distance = 80
   );
 };
 
-const NoteBook = ({ url, isOpen, skipInitialAnimation = false}) => {
+const NoteBook = ({ url, isOpen, skipInitialAnimation = false }) => {
   const { scene, animations } = useGLTF(url);
   const group = useRef();
   const { actions } = useAnimations(animations, group);
@@ -32,31 +38,31 @@ const NoteBook = ({ url, isOpen, skipInitialAnimation = false}) => {
 
     const openAction = actions["OpenAction"];
     const closeAction = actions["CloseAction"];
-    
+
     if (openAction && closeAction) {
       if (!isOpen) {
         closeAction.reset();
         closeAction.setLoop(THREE.LoopOnce, 1);
         closeAction.clampWhenFinished = true;
-        
+
         if (skipInitialAnimation) {
           closeAction.time = closeAction.getClip().duration;
           closeAction.paused = true;
         }
-        
+
         closeAction.play();
-        
+
         if (skipInitialAnimation) {
-          closeAction.paused = true; 
+          closeAction.paused = true;
         }
-        
+
         setCurrentAction(closeAction);
       } else if (!skipInitialAnimation) {
         openAction.reset().setLoop(THREE.LoopOnce, 1).play();
         openAction.clampWhenFinished = true;
         setCurrentAction(openAction);
       }
-      
+
       setIsInitialized(true);
     }
   }, [actions, isOpen, skipInitialAnimation, isInitialized]);
@@ -73,7 +79,7 @@ const NoteBook = ({ url, isOpen, skipInitialAnimation = false}) => {
     setCurrentAction(newAction);
     prevIsOpen.current = isOpen;
   }, [isOpen, actions, currentAction, isInitialized]);
-  
+
   return (
     <group
       ref={group}
@@ -205,6 +211,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
   const [textStyle, setTextStyle] = useState("normal");
   const [planeSide, setPlaneSide] = useState(null);
   const [fontFamily, setFontFamily] = useState('Arial');
+  const textAreaRef = useRef(null);
 
 
   const fontFamilies = [
@@ -228,7 +235,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
 
   const toggleOpen = () => {
     if (animationCooldown) return;
-    setBookOpen(id,!isOpen);
+    setBookOpen(id, !isOpen);
     setAnimationCooldown(true);
     setTimeout(() => {
       setAnimationCooldown(false);
@@ -322,10 +329,8 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
     }
   }, [markerActive, showTextInput]);
   useEffect(() => {
-    if (textActive) {
-      document.body.classList.add("text-cursor");
-    } else {
-      document.body.classList.remove("text-cursor");
+    if(!textActive){
+      setShowTextInput(false);
     }
   }, [textActive]);
   useEffect(() => {
@@ -481,6 +486,10 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
         setPlaneClickPosition({ x: localX, y: localY });
         setShowTextInput(true);
 
+        setTimeout(() => {
+            if (textAreaRef.current) textAreaRef.current.focus();
+        }, 0);
+
         console.log('Plane click position', { x: localX, y: localY });
       }
     }
@@ -545,7 +554,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
         materialRef.current.opacity = Math.sin(state.clock.getElapsedTime() * 2.5) * 0.2 + 0.8;
       }
       if (showTextInput) {
-        setCurrentDecalPos(prevPos => prevPos.clone().lerp(targetDecalPos, 0.1));
+        setCurrentDecalPos(targetDecalPos);
       }
     })
     useEffect(() => {
@@ -624,39 +633,11 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
               textAlign={textAlign}
               visible={showTextInput && markerActive}
             />
-            <Html position={[planeClickPosition.x, 0, -planeClickPosition.y]}>
-              <div style={{ background: "white", padding: "10px", borderRadius: "5px" }} >
-                <form onSubmit={handleTextSubmit}>
-                  <textarea
-                    type="text"
-                    value={tempContextText}
-                    onChange={(e) => {
-                      setTempContextText(e.target.value);
-                    }}
-                    placeholder="Enter Text..."
-                    style={{ width: "200px", padding: "5px", height: "100px", textAlign: textAlign }}
-                    maxLength={100}
-
-                    autoFocus />
-                  <input type="number" value={fontSize} onChange={(e) => {
-                    setFontSize(e.target.value);
-                  }}
-                    placeholder="Enter Font Size..."
-                    defaultValue={20}
-                    min={20}
-                    max={150}
-
-                  />
-                  <button type="submit">Add</button>
-                  <button type="button" onClick={() => setShowTextInput(false)}>Cancel</button>
-                </form>
-              </div>
-            </Html>
           </>
         )}
         <mesh
           onClick={handleMeshClick}>
-          <NoteBook url="/3Dnotes/NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation}/>
+          <NoteBook url="/NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation} />
           {isSelected && !anyMarkerActive && !onShowSettings && (
             <>
               <Html position={[6, 0, 0]} transform rotation-x={-Math.PI / 2} scale={0.9}>
@@ -754,8 +735,38 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
                   </button>
                 </div>
               </Html>
-              <Html position={[6.5, 0, 0]} rotation-x={-Math.PI / 2} rotation-y={-0.2} transform scale={0.6}>
+              <Html position={[7, 0, 0]} rotation-x={-Math.PI / 2} rotation-y={-0.2} transform scale={0.6}>
                 <div className="markerMenuColumn">
+                  {showTextInput && 
+                    <form onSubmit={handleTextSubmit} style={{display: "flex", flexDirection: "column", gap: "10px"}}>
+                      <textarea
+                        ref={textAreaRef}
+                        type="text"
+                        value={tempContextText}
+                        onChange={(e) => {
+                          setTempContextText(e.target.value);
+                        }}
+                        placeholder="Enter Text..."
+                        style={{ width: "215px", padding: "5px", height: "100px", textAlign: textAlign, backgroundColor: "white", color: "black", maxHeight: "300px", borderRadius: "6px" }}
+                        maxLength={100}
+
+                        autoFocus />
+                        <div style={{display:"flex", flexDirection: "row", gap: "10px"}}>
+                          <input type="number" value={fontSize} onChange={(e) => {
+                            setFontSize(e.target.value);
+                          }}
+                            placeholder="Enter Font Size..."
+                            defaultValue={20}
+                            min={20}
+                            max={150}
+                            style={{backgroundColor: "white", color: "black", borderRadius: "8px", padding: "2px"}}
+
+                          />
+                          <button type="submit" style={{backgroundColor: "#222831",padding: "5px", gap: "5px", borderRadius: "6px"}}>Add</button>
+                          <button type="button" style={{backgroundColor: "#222831",padding: "5px", gap: "5px", borderRadius: "6px"}} onClick={() => {setShowTextInput(false); setTextActive(false)}}>Cancel</button>
+                        </div>
+                    </form>
+                  }
                   <select className="fontSelect" style={{ fontFamily: fontFamily }} value={fontFamily} onChange={(e) => {
                     setFontFamily(e.target.value);
                   }}>
@@ -833,7 +844,26 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
     </>
   )
 }
-const App = () => {
+
+function MainPage({ setLoggedIn }) {
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    setLoggedIn(true);
+    navigate("/3Dnotes");
+  };
+
+  return (
+    <div className="flex flex-col w-screen h-screen bg-black items-center overflow-x-hidden overflow-y-scroll scroll-smooth">
+      <Header setLoggedIn={handleLogin} />
+      <Hero/>
+      <Features/>
+      <About/>
+    </div>
+  );
+}
+
+function NotesPage() {
   const [isRotating, setIsRotating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [anyMarkerActive, setAnyMarkerActive] = useState(false);
@@ -841,7 +871,7 @@ const App = () => {
   const [fogLevel, setFogLevel] = useState(100);
   const [gridValue1, setGridValue1] = useState(2);
   const [gridValue2, setGridValue2] = useState(6);
-  const [backgroundColor, setBackgroundColor] = useState("#3057E1");
+  const [backgroundColor, setBackgroundColor] = useState("#262626");
   const [selected, setSelected] = useState({ type: null, id: null });
   const [books, setBooks] = useState([]);
   const [stickyNotes, setStickyNotes] = useState([]);
@@ -1143,9 +1173,23 @@ const App = () => {
         clearSScene={clearScene}
       />
     </div>
+  );
+}
 
+const App = () => {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  return (
+    <>
+      <Router>
+        <Routes>
+          <Route path="/" element={<MainPage setLoggedIn={setLoggedIn} />} />
+          <Route path="/3Dnotes" element={<NotesPage/>} />
+        </Routes>
+      </Router>
+    </>
   )
 }
-useGLTF.preload("/3Dnotes/NoteBookSSS.glb");
-useGLTF.preload("/3Dnotes/StickyNote.glb");
+useGLTF.preload("/NoteBookSSS.glb");
+useGLTF.preload("/StickyNote.glb");
 export default App;

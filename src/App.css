@@ -1,8 +1,16 @@
+@import "tailwindcss";
+
 .App {
 	font-family: "Poppins", sans-serif;
 	width: 100vw;
 	height: 100vh;
 	user-select: none;
+}
+
+button {
+	cursor: pointer;
+	align-items: center;
+	justify-content: center;
 }
 
 body{
@@ -200,6 +208,7 @@ input[type="range"]:disabled::-moz-range-thumb {
 	right: 5px;
 	background-color: #222831;
 	transition: 0.5s;
+	border-radius: 10px;
 }
 
 .userInterface_settings_button:focus {
@@ -219,6 +228,8 @@ input[type="range"]:disabled::-moz-range-thumb {
 }
 
 .userInterface_inventory {
+	display: flex;
+	flex-direction: row;
 	position: absolute;
 	bottom: 20px;
 	left: 50%;
@@ -234,6 +245,10 @@ input[type="range"]:disabled::-moz-range-thumb {
 	height: 80px;
 	background-color: #222831;
 	transition: 0.5s;
+	display: flex;
+	align-items: center; 
+	justify-content: center;
+	border-radius: 10px;
 }
 
 .userInterface_inventory_item:focus {
@@ -256,6 +271,7 @@ input[type="range"]:disabled::-moz-range-thumb {
 	height: 500px;
 	margin: 0 auto;
 	transform: translate(-50%, 50%);
+	padding-top: 20px;
 }
 
 .userInterface_settingsMenu_header {
@@ -305,6 +321,7 @@ input[type="range"]:disabled::-moz-range-thumb {
 	height: 60px;
 	display: flex;
 	align-items: center;
+	border-radius: 10px;
 }
 
 .objectButton:focus {
@@ -432,6 +449,8 @@ input[type="range"]:disabled::-moz-range-thumb {
 	height: 50px;
 	background-color: #222831;
 	transition: 0.5s;
+	padding: 10px;
+	border-radius: 10px;
 }
 
 .topLeftButton:focus{
