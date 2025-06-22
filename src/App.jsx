@@ -637,7 +637,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
         )}
         <mesh
           onClick={handleMeshClick}>
-          <NoteBook url="#/NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation} />
+          <NoteBook url="NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation} />
           {isSelected && !anyMarkerActive && !onShowSettings && (
             <>
               <Html position={[6, 0, 0]} transform rotation-x={-Math.PI / 2} scale={0.9}>
@@ -1190,6 +1190,6 @@ const App = () => {
     </>
   )
 }
-useGLTF.preload("#/NoteBookSSS.glb");
-useGLTF.preload("#/StickyNote.glb");
+useGLTF.preload("NoteBookSSS.glb");
+useGLTF.preload("StickyNote.glb");
 export default App;

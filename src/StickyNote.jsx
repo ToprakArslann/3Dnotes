@@ -327,7 +327,7 @@ const StickyNote = ({
           onClick={handlePlaneClick}
           rotation={[-Math.PI/2, Math.PI*2, 0]}
         >
-          <Model url="#/StickyNote.glb"/>
+          <Model url="StickyNote.glb"/>
           <Text
             ref={textRef}
             position={[0, 0, 0.01]}
