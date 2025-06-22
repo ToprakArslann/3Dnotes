@@ -1184,7 +1184,7 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/" element={<MainPage setLoggedIn={setLoggedIn} />} />
-          <Route path="/3Dnotes" element={<NotesPage/>} />
+          <Route path="/3Dnotes/*" element={<NotesPage/>} />
         </Routes>
       </Router>
     </>
