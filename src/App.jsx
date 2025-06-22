@@ -637,7 +637,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
         )}
         <mesh
           onClick={handleMeshClick}>
-          <NoteBook url="/NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation} />
+          <NoteBook url="#/NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation} />
           {isSelected && !anyMarkerActive && !onShowSettings && (
             <>
               <Html position={[6, 0, 0]} transform rotation-x={-Math.PI / 2} scale={0.9}>
@@ -845,7 +845,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
   )
 }
 
-function MainPage({ setLoggedIn }) {
+function MainPage() {
   const navigate = useNavigate();
 
   const handleLogin = () => {
@@ -855,7 +855,7 @@ function MainPage({ setLoggedIn }) {
 
   return (
     <div className="flex flex-col w-screen h-screen bg-black items-center overflow-x-hidden overflow-y-scroll scroll-smooth">
-      <Header setLoggedIn={handleLogin} />
+      <Header/>
       <Hero/>
       <Features/>
       <About/>
@@ -1183,13 +1183,13 @@ const App = () => {
     <>
       <Router>
         <Routes>
-          <Route path="/" element={<MainPage setLoggedIn={setLoggedIn} />} />
-          <Route path="/3Dnotes/*" element={<NotesPage/>} />
+          <Route path="/" element={<MainPage/>} />
+          <Route path="/Start" element={<NotesPage/>} />
         </Routes>
       </Router>
     </>
   )
 }
-useGLTF.preload("/NoteBookSSS.glb");
-useGLTF.preload("/StickyNote.glb");
+useGLTF.preload("#/NoteBookSSS.glb");
+useGLTF.preload("#/StickyNote.glb");
 export default App;
