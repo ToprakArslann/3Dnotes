@@ -8,7 +8,7 @@ import StickyNote from "./StickyNote";
 import "./App.css";
 import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Bold, BookOpen, Hand, Italic, PencilLine, RemoveFormatting, RotateCw, TextCursor, X } from "lucide-react";
 import Header from "./Components/Header";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import Hero from "./Components/Hero";
 import Features from "./Components/Features";
 import { color } from "three/tsl";
