@@ -14,14 +14,14 @@
 - **Page Navigation**: Flip through notebook pages seamlessly
 - **Object Manipulation**: Move and rotate notebooks in 3D space
 - **Customizable Environment**: Adjust grid settings and background colors
-
+- **Export Options**: Share your notes in various formats
+  
 ## 🚀 Upcoming Features
 
 - **Custom Papers**: Insert different paper types (lined, graph, blank)
 - **Drawing Tools**: Sketch and draw directly on notebook pages
 - **Media Support**: Embed images and other media
 - **Bookmarks**: Add and organize page markers
-- **Export Options**: Share your notes in various formats
 
 ## 🛠️ Technologies
 
