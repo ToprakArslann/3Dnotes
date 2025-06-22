@@ -1,6 +1,6 @@
 {
   "name": "3dnotes",
-  "homepage": "https://toprakarslann.github.io/3Dnotes",
+  "homepage": "https://toprakarslann.github.io/3Dnotes/",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -17,6 +17,7 @@
     "@react-three/fiber": "^9.1.0",
     "@tailwindcss/vite": "^4.1.10",
     "framer-motion": "^12.18.1",
+    "gh-pages": "^6.3.0",
     "lucide-react": "^0.487.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
