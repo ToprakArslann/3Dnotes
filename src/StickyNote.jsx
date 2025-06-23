@@ -239,8 +239,7 @@ const StickyNote = ({
       setCursorVisible(true);
       
       if (e.key === 'Escape') {
-        setMarkerActive(false);
-        setAnyMarkerActive(false);
+        exitMarker();
         return;
       }
       
