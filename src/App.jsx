@@ -1048,7 +1048,7 @@ function NotesPage() {
   const addContextToSticky = (stickyId, newContext) => {
     setStickyNotes(prevSticky =>
       prevSticky.map(sticky =>
-        sticky.id === stickyId ? { ...sticky, stickyContents: [...(sticky.stickyContents || []), newContext] } : sticky
+        sticky.id === stickyId ? { ...sticky, stickyContents: newContext} : sticky
       )
     );
   };
