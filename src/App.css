@@ -268,7 +268,7 @@ input[type="range"]:disabled::-moz-range-thumb {
 	left: 50%;
 	background-color: #222831;
 	width: 500px;
-	height: 500px;
+	height: 550px;
 	margin: 0 auto;
 	transform: translate(-50%, 50%);
 	padding-top: 20px;
@@ -460,4 +460,9 @@ input[type="range"]:disabled::-moz-range-thumb {
 .topLeftButton:hover{
 	background-color: #393E46;
 	transition: 0.5s;
+}
+
+.animationsCheck{
+	width: 50px;
+	height: 40px;
 }

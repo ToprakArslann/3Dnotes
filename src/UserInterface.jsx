@@ -2,7 +2,7 @@ import { Settings, BookOpen, StickyNote, Star, MoveUpRight, Fullscreen, BookOpen
 import { useState, useRef } from "react";
 import { Html } from "@react-three/drei";
 
-const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColor, setBackgroundColor, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, createSticky, anyMarkerActive, exportScene, importScene, clearSScene}) => {
+const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColor, setBackgroundColor, setFogLevel, gridValue1, setGridValue1, gridValue2, setGridValue2, createBook, createSticky, anyMarkerActive, exportScene, importScene, clearSScene, animations, setAnimations}) => {
     const fileInputRef = useRef(null);
 
     const handleImportClick = () => {
@@ -78,6 +78,12 @@ const UserInterface = ({ showSettings, setShowSettings, fogLevel, backgroundColo
                                         <input type="range" value={gridValue2} min="1" max="10" onChange={(e) => setGridValue2(e.target.value)} />
                                         {gridValue2}
                                     </span>
+                                </div>
+                                <div className="item">
+                                    <span className="settingsMenu_itemName">
+                                        Enable Animations
+                                    </span>
+                                    <input className="animationsCheck" type="checkbox" checked={animations} onChange={()=> setAnimations(!animations)}/>
                                 </div>
                             </div>
                         </div>

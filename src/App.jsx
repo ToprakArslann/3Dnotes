@@ -172,7 +172,7 @@ const createTextTexture = (text, fontSize, textColor, textAlign = "left", textSt
   return texture;
 };
 
-const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive, setAnyMarkerActive, isSelected, onPositionUpdate, onRotationUpdate, pageContexts, setPageContexts, isOpen, setBookOpen, skipInitialAnimation = false }) => {
+const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onShowSettings, selectedId, setSelectedId, anyMarkerActive, setAnyMarkerActive, isSelected, onPositionUpdate, onRotationUpdate, pageContexts, setPageContexts, isOpen, setBookOpen, skipInitialAnimation = false , animations}) => {
   const meshRef = useRef();
   const arrowRef = useRef();
   const controlsRef = useRef();
@@ -212,6 +212,7 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
   const [planeSide, setPlaneSide] = useState(null);
   const [fontFamily, setFontFamily] = useState('Arial');
   const textAreaRef = useRef(null);
+  const meshRef2 = useRef(null);
 
 
   const fontFamilies = [
@@ -306,11 +307,27 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
 
       meshRef.current.rotation.y += rotationDiff * rotationSmoothness;
     }
+
+    if(meshRef.current && isSelected && animations){
+      meshRef2.current.position.y += (5 - meshRef.current.position.y) * 0.1;
+      if(meshRef2.current.position.y >= 4.8){
+        const t = state.clock.getElapsedTime();
+        meshRef2.current.rotation.x = (Math.sin(t * 0.6) + 1) * 0.02;
+        meshRef2.current.position.y = 5 + (Math.sin(t / 1.5)) / 8;
+      }
+    } else {
+      if(meshRef2.current.position.y !== 0){
+        meshRef2.current.rotation.x = 0;
+        meshRef2.current.position.y += (0 - meshRef2.current.position.y) * 0.10;
+      }
+    }
+
   });
 
   function easeInOutCubic(x) {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
+
 
   useEffect(() => {
     if (markerActive) {
@@ -360,8 +377,8 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
 
   useEffect(() => {
     // console.log("selected: ",selectedId);
-    // console.log("isSelected: ",isSelected);
-    // console.log("isMarkerActive: ",markerActive);
+     console.log("isSelected: ",isSelected);
+     console.log("isMarkerActive: ",markerActive);
     // console.log("L/R: ",leftPage,rightPage);
     // console.log("textActive: ",textActive);
     // console.log("posiiton",position);
@@ -591,10 +608,29 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
     <>
       <OrbitControls ref={controlsRef} enabled={false} />
       <group ref={meshRef} position={position} rotation={rotation}>
-        <Plane ref={planeLeftRef} args={[4.3, 6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("left"); handlePlaneClick(e, "left"); }}>
-          <meshStandardMaterial opacity={0} transparent />
-          {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map(contextItem => {
-            return (
+        <mesh
+          ref={meshRef2}
+          onClick={handleMeshClick}>
+          <Plane ref={planeLeftRef} args={[4.3, 6.6]} position={[-2.6, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("left"); handlePlaneClick(e, "left"); }}>
+            <meshStandardMaterial opacity={0} transparent />
+            {pageContexts.filter(ctx => ctx.pageNumber === leftPage).map(contextItem => {
+              return (
+                <Decal
+                  key={contextItem.id}
+                  scale={[10, 10]}
+                  position={contextItem.position}
+                  rotation={contextItem.rotation}>
+                  <meshStandardMaterial map={contextItem.textTexture} transparent />
+                </Decal>
+              )
+            })}
+            <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
+              {leftPage}
+            </Text>
+          </Plane>
+          <Plane ref={planeRightRef} args={[4.3, 6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("right"); handlePlaneClick(e, "right"); }}>
+            <meshStandardMaterial opacity={0} transparent />
+            {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map(contextItem => (
               <Decal
                 key={contextItem.id}
                 scale={[10, 10]}
@@ -602,41 +638,23 @@ const CubeR = ({ id, position, rotation, onDraggingChange, onRotatingChange, onS
                 rotation={contextItem.rotation}>
                 <meshStandardMaterial map={contextItem.textTexture} transparent />
               </Decal>
-            )
-          })}
-          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
-            {leftPage}
-          </Text>
-        </Plane>
-        <Plane ref={planeRightRef} args={[4.3, 6.6]} position={[2.6, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={pageVisible} onClick={(e) => { setPlaneSide("right"); handlePlaneClick(e, "right"); }}>
-          <meshStandardMaterial opacity={0} transparent />
-          {pageContexts.filter(ctx => ctx.pageNumber === rightPage).map(contextItem => (
-            <Decal
-              key={contextItem.id}
-              scale={[10, 10]}
-              position={contextItem.position}
-              rotation={contextItem.rotation}>
-              <meshStandardMaterial map={contextItem.textTexture} transparent />
-            </Decal>
-          ))}
-          <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
-            {rightPage}
-          </Text>
-        </Plane>
-        {textActive && showTextInput && markerActive && (
-          <>
-            <TextPreview
-              planeSide={planeSide}
-              text={tempContextText}
-              fontSize={fontSize}
-              textColor={textColor}
-              textAlign={textAlign}
-              visible={showTextInput && markerActive}
-            />
-          </>
-        )}
-        <mesh
-          onClick={handleMeshClick}>
+            ))}
+            <Text fontSize={0.2} color="black" anchorX="center" anchorY="middle" position={[0, -3.2, 0.01]}>
+              {rightPage}
+            </Text>
+          </Plane>
+          {textActive && showTextInput && markerActive && (
+            <>
+              <TextPreview
+                planeSide={planeSide}
+                text={tempContextText}
+                fontSize={fontSize}
+                textColor={textColor}
+                textAlign={textAlign}
+                visible={showTextInput && markerActive}
+              />
+            </>
+          )}
           <NoteBook url="NoteBookSSS.glb" isOpen={isOpen} skipInitialAnimation={skipInitialAnimation} />
           {isSelected && !anyMarkerActive && !onShowSettings && (
             <>
@@ -871,6 +889,7 @@ function NotesPage() {
   const [fogLevel, setFogLevel] = useState(100);
   const [gridValue1, setGridValue1] = useState(2);
   const [gridValue2, setGridValue2] = useState(6);
+  const [animations, setAnimations] = useState(true);
   const [backgroundColor, setBackgroundColor] = useState("#262626");
   const [selected, setSelected] = useState({ type: null, id: null });
   const [books, setBooks] = useState([]);
@@ -1085,6 +1104,9 @@ function NotesPage() {
     )
   }
 
+  useEffect(()=> {
+    console.log("aaaa", animations);
+  },[animations])
   const handleRotatingChange = (rotating) => {
     setIsRotating(rotating);
     console.log("books", books)
@@ -1127,6 +1149,7 @@ function NotesPage() {
             onPositionUpdate={updateBookPosition}
             onRotationUpdate={updateBookRotation}
             setBookOpen={setBookOpen}
+            animations={animations}
           />
         ))}
 
@@ -1171,6 +1194,8 @@ function NotesPage() {
         exportScene={exportScene}
         importScene={importScene}
         clearSScene={clearScene}
+        animations={animations}
+        setAnimations={setAnimations}
       />
     </div>
   );
